@@ -4516,10 +4516,8 @@ class settings_navigation extends navigation_node {
         if ($adminoptions->backup) {
             $url = new moodle_url('/backup/backup.php', array('id'=>$course->id));
             $coursenode->add(get_string('backup'), $url, self::TYPE_SETTING, null, 'backup', new pix_icon('i/backup', ''));
-        }
 
-        // Restore to this course
-        if ($adminoptions->restore) {
+            // Restore to this course (We still need to see the backup files so no checkup on 'restore:restorecourse').
             $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
         }
@@ -5417,10 +5415,9 @@ class settings_navigation extends navigation_node {
         if ($adminoptions->backup) {
             $url = new moodle_url('/backup/backup.php', array('id'=>$course->id));
             $frontpage->add(get_string('backup'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/backup', ''));
-        }
 
-        // Restore to this course
-        if ($adminoptions->restore) {
+            // MDLUM-755 - Impossible d'acceder a la zone de sauvegarde lorsqu'on interdit aux enseignants de restorer leur cours.
+            // Restore to this course (We still need to see the backup files so no checkup on 'restore:restorecourse').
             $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$coursecontext->id));
             $frontpage->add(get_string('restore'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
         }

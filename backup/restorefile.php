@@ -59,7 +59,9 @@ switch ($context->contextlevel) {
 
 
 require_login($course, false, $cm);
-require_capability('moodle/restore:restorecourse', $context);
+// We still need to see the backup files when having role 'backup:backupcourse',
+// so no checkup on 'restore:restorecourse'.
+require_capability('moodle/backup:backupcourse', $context);
 
 if (is_null($course)) {
     $courseid = 0;
