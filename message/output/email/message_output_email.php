@@ -37,7 +37,7 @@ class message_output_email extends message_output {
      * @param object $eventdata the event data submitted by the message sender plus $eventdata->savedmessageid
      */
     function send_message($eventdata) {
-        global $CFG, $DB;
+        global $CFG, $DB, $PAGE;
 
         // skip any messaging suspended and deleted users
         if ($eventdata->userto->auth === 'nologin' or $eventdata->userto->suspended or $eventdata->userto->deleted) {
@@ -96,6 +96,17 @@ class message_output_email extends message_output {
             if ($eventdata->conversationtype == \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP) {
                 $emailuser = false;
             }
+            // Add users preferences notification link in footer.    
+            $urlpref = (new \moodle_url('/message/notificationpreferences.php'))->out(true);
+            $sm = get_string_manager();
+            $lang = $recipient->lang;
+            $textlink = $sm->get_string('notificationpreferenceslink', 'message_email', null, $lang);
+            $renderer = $PAGE->get_renderer('message_email');
+
+            $eventdata->fullmessagehtml .= $renderer->render_from_template('message_email/email_body_link',
+                ['link' => $urlpref, 'textlink' => $textlink]);
+            $eventdata->fullmessage .= $sm->get_string('notificationpreferenceslinktext', 'message_email', $urlpref, $lang);
+
         }
 
         if ($emailuser) {
