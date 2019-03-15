@@ -1265,9 +1265,15 @@ abstract class webservice_base_server extends webservice_server {
                 'function' => $this->functionname
             )
         );
-        $event = \core\event\webservice_function_called::create($params);
-        $event->set_legacy_logdata(array(SITEID, 'webservice', $this->functionname, '' , getremoteaddr() , 0, $this->userid));
-        $event->trigger();
+        // Log the webservice call if config mobile ws log disabled or it's not mobile ws.
+        $services = explode(',', $this->function->services);
+        $wsmobile = in_array(MOODLE_OFFICIAL_MOBILE_SERVICE, $services);
+        $disabledmobilewslog = get_config('tool_mobile', 'disablemobilewebservicelog');
+        if (!$disabledmobilewslog || !$wsmobile) {
+            $event = \core\event\webservice_function_called::create($params);
+            $event->set_legacy_logdata(array(SITEID, 'webservice', $this->functionname, '' , getremoteaddr() , 0, $this->userid));
+            $event->trigger();
+        }
 
         // Do additional setup stuff.
         $settings = external_settings::get_instance();

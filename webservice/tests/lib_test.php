@@ -137,6 +137,110 @@ class webservice_test extends advanced_testcase {
     }
 
     /**
+     * Test mobile webservice calls log.
+     */
+    public function test_mobile_ws_log() {
+        global $DB, $USER;
+
+        $this->resetAfterTest(true);
+
+        // Set current user.
+        $this->setAdminUser();
+
+        $service = $DB->get_record('external_services', array('shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE, 'enabled' => 1));
+        $externalserviceid = $service->id;
+
+        // Add token.
+        $externaltoken = new stdClass();
+        $externaltoken->token = 'testtoken';
+        $externaltoken->tokentype = 0;
+        $externaltoken->userid = $USER->id;
+        $externaltoken->externalserviceid = $externalserviceid;
+        $externaltoken->contextid = 1;
+        $externaltoken->creatorid = $USER->id;
+        $externaltoken->timecreated = time();
+        $DB->insert_record('external_tokens', $externaltoken);
+
+        // Add a function to the service.
+        $wsmethod = new stdClass();
+        $wsmethod->externalserviceid = $externalserviceid;
+        $wsmethod->functionname = 'block_studium_course_overview_get_user_sessions';
+        $DB->insert_record('external_services_functions', $wsmethod);
+
+        // Initialise the dummy web service.
+        $dummy = new webservice_dummy_test(WEBSERVICE_AUTHMETHOD_PERMANENT_TOKEN);
+        // Set the token.
+        $dummy->set_token($externaltoken->token);
+        // Run the web service.
+        // Trigger and capture the event.
+        $sink = $this->redirectEvents();
+        $dummy->run();
+        // Get our event event.
+        $events = $sink->get_events();
+        $event = reset($events);
+        $this->assertInstanceOf('core\event\webservice_function_called', $event);
+
+        // Disable mobile ws call log.
+        set_config('disablemobilewebservicelog', 1, 'tool_mobile');
+        // Trigger and capture the event.
+        $sink = $this->redirectEvents();
+        $dummy->run();
+        // Get our event event.
+        $events = $sink->get_events();
+        $this->assertEmpty($events);
+
+        // Test with webservice non-mobile.
+        // Add a web service.
+        $webservice = new stdClass();
+        $webservice->name = 'WS simple test';
+        $webservice->enabled = true;
+        $webservice->restrictedusers = false;
+        $webservice->component = 'moodle';
+        $webservice->timecreated = time();
+        $webservice->downloadfiles = true;
+        $webservice->uploadfiles = true;
+        $externalserviceid = $DB->insert_record('external_services', $webservice);
+
+        // Add token.
+        $externaltoken = new stdClass();
+        $externaltoken->token = 'testtoken2';
+        $externaltoken->tokentype = 0;
+        $externaltoken->userid = $USER->id;
+        $externaltoken->externalserviceid = $externalserviceid;
+        $externaltoken->contextid = 1;
+        $externaltoken->creatorid = $USER->id;
+        $externaltoken->timecreated = time();
+        $DB->insert_record('external_tokens', $externaltoken);
+        // Add a function to the service.
+        $wsmethod = new stdClass();
+        $wsmethod->externalserviceid = $externalserviceid;
+        $wsmethod->functionname = 'core_cohort_get_cohorts';
+        $DB->insert_record('external_services_functions', $wsmethod);
+
+        // Initialise the dummy web service.
+        $dummy = new webservice_dummy_test(WEBSERVICE_AUTHMETHOD_PERMANENT_TOKEN);
+        $dummy->set_functionname('core_cohort_get_cohorts');
+        // Set the token.
+        $dummy->set_token($externaltoken->token);
+        // Trigger and capture the event.
+        $sink = $this->redirectEvents();
+        $dummy->run();
+        // Get our event event.
+        $events = $sink->get_events();
+        $event = reset($events);
+        $this->assertInstanceOf('core\event\webservice_function_called', $event);
+        // Set disable mobile ws call log to off.
+        set_config('disablemobilewebservicelog', 0, 'tool_mobile');
+        // Trigger and capture the event.
+        $sink = $this->redirectEvents();
+        $dummy->run();
+        // Get our event event.
+        $events = $sink->get_events();
+        $event = reset($events);
+        $this->assertInstanceOf('core\event\webservice_function_called', $event);
+    }
+
+    /**
      * Tests update_token_lastaccess() function.
      *
      * @throws dml_exception

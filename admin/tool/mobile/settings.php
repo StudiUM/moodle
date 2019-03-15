@@ -41,6 +41,9 @@ if ($hassiteconfig) {
         $temp->add(new admin_setting_enablemobileservice('enablemobilewebservice',
                 new lang_string('enablemobilewebservice', 'admin'),
                 new lang_string('configenablemobilewebservice', 'admin', $enablemobiledoclink), $default));
+        $temp->add(new admin_setting_configcheckbox('tool_mobile/disablemobilewebservicelog',
+                new lang_string('disablemobilewebservicelog', 'tool_mobile'),
+                new lang_string('disablemobilewebservicelog_desc', 'tool_mobile'), 0));
     }
 
     $temp->add(new admin_setting_configtext('tool_mobile/apppolicy', new lang_string('apppolicy', 'tool_mobile'),

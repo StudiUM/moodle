@@ -53,6 +53,8 @@ Mis calificaciones|https://someurl.xyz/local/mygrades/index.php|embedded|es
 </pre>';
 $string['disabledfeatures'] = 'Disabled features';
 $string['disabledfeatures_desc'] = 'Select here the features you want to disable in the Mobile app for your site. Please note that some features listed here could be already disabled via other site settings. You will have to log out and log in again in the app to see the changes.';
+$string['disablemobilewebservicelog'] = 'Disable logging of mobile web service calls';
+$string['disablemobilewebservicelog_desc'] = 'If disabled, mobile web service calls will not be logged';
 $string['displayerrorswarning'] = 'Display debug messages (debugdisplay) is enabled. It should be disabled.';
 $string['downloadcourse'] = 'Download course';
 $string['downloadcourses'] = 'Download courses';
