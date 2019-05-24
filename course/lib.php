@@ -3678,14 +3678,25 @@ function course_change_sortorder_after_course($courseorid, $moveaftercourseid) {
  */
 function course_view($context, $sectionnumber = 0) {
 
+    global $USER, $PAGE, $CFG;
+
     $eventdata = array('context' => $context);
 
     if (!empty($sectionnumber)) {
         $eventdata['other']['coursesectionnumber'] = $sectionnumber;
     }
 
-    $event = \core\event\course_viewed::create($eventdata);
-    $event->trigger();
+    $tolog = !isset($CFG->restrictedip);
+    if (isset($CFG->restrictedip)) {
+       if (!in_array($PAGE->requestip, $CFG->restrictedip)) {
+          $tolog = true;
+       }
+    }
+
+    if ($tolog) {
+       $event = \core\event\course_viewed::create($eventdata);
+       $event->trigger();
+    }
 
     user_accesstime_log($context->instanceid);
 }

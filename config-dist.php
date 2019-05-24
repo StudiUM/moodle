@@ -553,6 +553,11 @@ $CFG->admin = 'admin';
 // alternative class name that will be auto-loaded.
 //
 //      $CFG->task_log_class = '\\local_mytasklogger\\logger';
+//      
+// To know which server is up, the load balancer needs to access a page many time per minute. 
+// Those access create a lot of useless logs. 
+// The goal of this config is to have a way to prevent the system to log in that case.
+//     $CFG->restrictedip = array("XX.XX.XX.XX", "XX.XX.XX.XX");
 //
 // Moodle 2.9 allows administrators to customise the list of supported file types.
 // To add a new filetype or override the definition of an existing one, set the
