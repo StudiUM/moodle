@@ -90,21 +90,9 @@ class grade_import_mapping_form extends moodleform {
         global $CFG, $COURSE;
         $mform =& $this->_form;
 
-        // this is an array of headers
+        // This is an array of headers.
         $header = $this->_customdata['header'];
-        // course id
-
-        $mform->addElement('header', 'general', get_string('identifier', 'grades'));
-        $mapfromoptions = array();
-
-        if ($header) {
-            foreach ($header as $i=>$h) {
-                $mapfromoptions[$i] = s($h);
-            }
-        }
-        $mform->addElement('select', 'mapfrom', get_string('mapfrom', 'grades'), $mapfromoptions);
-        $mform->addHelpButton('mapfrom', 'mapfrom', 'grades');
-
+        // This is an array of fields that user can be mapped to.
         $maptooptions = array(
             'userid'       => get_string('userid', 'grades'),
             'username'     => get_string('username'),
@@ -112,7 +100,34 @@ class grade_import_mapping_form extends moodleform {
             'useremail'    => get_string('email'),
             '0'            => get_string('ignore', 'grades')
         );
-        $mform->addElement('select', 'mapto', get_string('mapto', 'grades'), $maptooptions);
+
+        $mform->addElement('header', 'general', get_string('identifier', 'grades'));
+
+        $mapfromkey = false;
+        $maptokey = false;
+        $mapfromoptions = array();
+
+        if ($header) {
+            foreach ($header as $i => $h) {
+                $mapfromoptions[$i] = s($h);
+                // Auto-mapping of the first field user can be mapped from import file to Moodle.
+                if (!$maptokey) {
+                    if ($maptokey = array_search($h, $maptooptions)) {
+                        $mapfromkey = $i;
+                    }
+                }
+            }
+        }
+
+        $selectampfrom = $mform->addElement('select', 'mapfrom', get_string('mapfrom', 'grades'), $mapfromoptions);
+        if ($mapfromkey) {
+            $selectampfrom->setSelected($mapfromkey);
+        }
+        $mform->addHelpButton('mapfrom', 'mapfrom', 'grades');
+        $selectampto = $mform->addElement('select', 'mapto', get_string('mapto', 'grades'), $maptooptions);
+        if ($maptokey) {
+            $selectampto->setSelected($maptokey);
+        }
 
         $mform->addHelpButton('mapto', 'mapto', 'grades');
         $mform->addElement('header', 'general_map', get_string('mappings', 'grades'));
@@ -122,14 +137,26 @@ class grade_import_mapping_form extends moodleform {
         $feedbacks = array();
         if ($gradeitems = $this->_customdata['gradeitems']) {
             foreach ($gradeitems as $itemid => $itemname) {
-                $feedbacks['feedback_'.$itemid] = get_string('feedbackforgradeitems', 'grades', $itemname);
+                $column = new stdClass();
+                $column->name = $itemname;
+                $column->extra = get_string('feedback');
+                $feedbacks['feedback_'.$itemid] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+
+                $column->extra = get_string('real', 'grades');
+                $realgrades[$itemid] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+
+                $column->extra = get_string('percentage', 'grades');
+                $percentgrades[$itemid] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+
+                $column->extra = get_string('letter', 'grades');
+                $lettergrades[$itemid] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
             }
         }
 
         if ($header) {
-            $i = 0; // index
+            $i = 0;
             foreach ($header as $h) {
-                $h = trim($h);
+                $hsearch = trim($h);
                 // This is what each header maps to.
                 $headermapsto = array(
                     get_string('others', 'grades')     => array(
@@ -139,7 +166,24 @@ class grade_import_mapping_form extends moodleform {
                     get_string('gradeitems', 'grades') => $gradeitems,
                     get_string('feedbacks', 'grades')  => $feedbacks
                 );
-                $mform->addElement('selectgroups', 'mapping_'.$i, s($h), $headermapsto);
+                $selectheaders = $mform->addElement('selectgroups', 'mapping_'.$i, s($h), $headermapsto);
+                // Auto-mapping of grade items or feedbacks that can be found in header.
+                $headermapstokey = array_search($hsearch, $gradeitems);
+                if (!$headermapstokey) {
+                    $headermapstokey = array_search($hsearch, $realgrades);
+                }
+                if (!$headermapstokey) {
+                    $headermapstokey = array_search($hsearch, $percentgrades);
+                }
+                if (!$headermapstokey) {
+                    $headermapstokey = array_search($hsearch, $lettergrades);
+                }
+                if (!$headermapstokey) {
+                    $headermapstokey = array_search($hsearch, $feedbacks);
+                }
+                if ($headermapstokey) {
+                    $selectheaders->setSelected($headermapstokey);
+                }
                 $i++;
             }
         }

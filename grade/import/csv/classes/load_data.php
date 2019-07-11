@@ -118,7 +118,7 @@ class gradeimport_csv_load_data {
                 } else {
                     $displaystring = $gradeitem->get_name();
                 }
-                $gradeitems[$gradeitem->id] = $displaystring;
+                $gradeitems[$gradeitem->id] = html_to_text($displaystring, 0, false);
             }
         }
         return $gradeitems;
