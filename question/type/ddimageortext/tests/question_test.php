@@ -290,4 +290,45 @@ final class question_test extends \basic_testcase {
             'Drop zone 4 -> {3. lazy}',
             $dd->summarise_response(array('p1' => '1', 'p2' => '1', 'p3' => '1', 'p4' => '1')));
     }
+
+    public function test_get_ordered_choices_choice_deleted() {
+        /** @var qtype_ddtoimage_question_base $dd */
+        $dd = test_question_maker::make_question('ddimageortext');
+        $dd->shufflechoices = false;
+        $dd->start_attempt(new question_attempt_step(), 1);
+
+        $g1choices = $dd->get_ordered_choices(1);
+        // Simulation of an instructor deleting 1 choice after an attempt has been made.
+        unset($dd->choices[1][1]);
+
+        // Choice expected to be populated for deleted support.
+        $g1choices[1] = (object) [
+            'id'       => false,
+            'text'     => get_string('deletedchoice', 'qtype_ddimageortext'),
+            'infinite' => false
+        ];;
+
+        $this->assertEquals($g1choices, $dd->get_ordered_choices(1));
+    }
+
+    public function test_classify_response_choice_deleted() {
+        /** @var qtype_ddtoimage_question_base $dd */
+        $dd = test_question_maker::make_question('ddimageortext');
+        $dd->shufflechoices = false;
+        $dd->start_attempt(new question_attempt_step(), 1);
+
+        // Simulation of an instructor deleting 1 choice after an attempt has been made.
+        unset($dd->choices[1][1]);
+
+        $this->assertEquals([
+            2 => new question_classified_response(2, '2. fox', 1),
+            3 => new question_classified_response(3, '3. lazy', 1),
+            4 => new question_classified_response(4, '4. dog', 1)
+        ], $dd->classify_response(array('p1' => '1', 'p2' => '2', 'p3' => '1', 'p4' => '2')));
+        $this->assertEquals([
+            1 => question_classified_response::no_response(),
+            3 => new question_classified_response(4, '4. dog', 0),
+            4 => new question_classified_response(4, '4. dog', 1)
+        ], $dd->classify_response(array('p1' => '', 'p2' => '1', 'p3' => '2', 'p4' => '2')));
+    }
 }
