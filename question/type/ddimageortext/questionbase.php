@@ -124,6 +124,9 @@ class qtype_ddtoimage_question_base extends qtype_gapselect_question_base {
 
             $fieldname = $this->field($placeno);
             $choicekey = $this->choiceorder[$group][$response[$fieldname]];
+            if (!isset($this->choices[$group][$choicekey])) {
+                continue;
+            }
             $choice = $this->choices[$group][$choicekey];
 
             $correct = $this->get_right_choice_for($placeno) == $response[$fieldname];
