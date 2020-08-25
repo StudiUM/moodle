@@ -1245,7 +1245,7 @@ img.userpicture {
         background-color: $card-bg;
         background-image: none;
         height: 40px;
-        width: 30px;
+        width: 90px;
         border-radius: 3px;
         border: 0;
         overflow: visible;
@@ -1280,6 +1280,7 @@ img.userpicture {
 
     .qnbutton.flagged .thispageholder {
         background: transparent url([[pix:theme|mod/quiz/flag-on]]) 15px 0 no-repeat;
+        background-position: right top;
     }
 
     .qnbutton .trafficlight {

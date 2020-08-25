@@ -1173,3 +1173,13 @@ table#categoryquestions {
         page-break-inside: avoid;
     }
 }
+.path-mod-quiz ul.quiznavigationlist {
+    list-style-type: unset;
+    margin: 0;
+    padding: 0;
+    margin-block-end: unset;
+    margin-block-start: unset;
+}
+.path-mod-quiz ul.quiznavigationlist li {
+    display: block;
+}

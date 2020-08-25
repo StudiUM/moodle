@@ -682,7 +682,8 @@ class behat_mod_quiz extends behat_question_base {
         $exception = new ExpectationException('Question "' . $questionnumber . '" is not in section "' .
                 $sectionheading . '" in the quiz navigation.', $this->getSession());
         $xpath = "//*[@id = 'mod_quiz_navblock']//*[contains(concat(' ', normalize-space(@class), ' '), ' qnbutton ') and " .
-                "contains(., {$questionnumberliteral}) and contains(preceding-sibling::h3[1], {$headingliteral})]";
+                "ancestor::ul[contains(@class,'quiznavigationlist') and contains(., {$questionnumberliteral}) and " .
+                "contains(preceding-sibling::h3[1], {$headingliteral})]]";
         $this->find('xpath', $xpath);
     }
 

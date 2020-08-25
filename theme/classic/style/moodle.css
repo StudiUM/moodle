@@ -18566,7 +18566,7 @@ img.userpicture {
   background-color: #fff;
   background-image: none;
   height: 40px;
-  width: 30px;
+  width: 90px;
   border-radius: 3px;
   border: 0;
   overflow: visible;
@@ -18594,7 +18594,8 @@ img.userpicture {
   border-width: 1px; }
 
 .path-mod-quiz #mod_quiz_navblock .qnbutton.flagged .thispageholder {
-  background: transparent url([[pix:theme|mod/quiz/flag-on]]) 15px 0 no-repeat; }
+  background: transparent url([[pix:theme|mod/quiz/flag-on]]) 15px 0 no-repeat;
+  background-position: right top; }
 
 .path-mod-quiz #mod_quiz_navblock .qnbutton .trafficlight {
   border: 0;
