@@ -51,6 +51,8 @@ class mod_quiz_renderer extends plugin_renderer_base {
 
         $output = '';
         $output .= $this->header();
+        $output .= $this->heading(format_string($attemptobj->get_quiz_name()), 2);
+        $output .= $this->heading(get_string('reviewsummary', 'quiz'), 3);
         $output .= $this->review_summary_table($summarydata, $page);
         $output .= $this->review_form($page, $showall, $displayoptions,
                 $this->questions($attemptobj, true, $slots, $page, $showall, $displayoptions),
@@ -445,6 +447,7 @@ class mod_quiz_renderer extends plugin_renderer_base {
         $output = '';
         $output .= $this->header();
         $output .= $this->quiz_notices($messages);
+        $output .= $this->heading(format_string($attemptobj->get_quiz_name()), 2);
         $output .= $this->countdown_timer($attemptobj, time());
         $output .= $this->attempt_form($attemptobj, $page, $slots, $id, $nextpage);
         $output .= $this->footer();
