@@ -88,6 +88,8 @@ class tinymce_texteditor extends texteditor {
         if ($fpoptions) {
             $PAGE->requires->js_init_call('M.editor_tinymce.init_filepicker', array($elementid, $fpoptions), true);
         }
+        // Accessibility.
+        $this->add_editor_accessibility($elementid);
     }
 
     protected function get_init_params($elementid, array $options=null) {
