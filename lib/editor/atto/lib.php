@@ -156,7 +156,8 @@ class atto_texteditor extends texteditor {
         $PAGE->requires->yui_module($modules,
                                     'Y.M.editor_atto.Editor.init',
                                     array($this->get_init_params($elementid, $options, $fpoptions, $jsplugins)));
-
+        // Accessibility.
+        $this->add_editor_accessibility($elementid);
     }
 
     /**
