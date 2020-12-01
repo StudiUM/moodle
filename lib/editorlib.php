@@ -242,4 +242,15 @@ abstract class texteditor {
      */
     public function head_setup() {
     }
+
+    /**
+     * Add accessibility text to the editor.
+     *
+     * @param string $elementid id of text area to be converted to editor
+     * @return void
+     */
+    public function add_editor_accessibility($elementid) {
+        global $PAGE;
+        $PAGE->requires->js_call_amd('core/editor_accessibility', 'init', [$elementid]);
+    }
 }

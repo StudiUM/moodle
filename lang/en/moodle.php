@@ -577,6 +577,7 @@ $string['editinga'] = 'Editing {$a}';
 $string['editingteachershort'] = 'Editor';
 $string['editlock'] = 'This value cannot be edited!';
 $string['editmyprofile'] = 'Edit profile';
+$string['editoraccessibility'] = 'You are going to enter in a text editor dialog box.';
 $string['editorbgcolor'] = 'Background-color';
 $string['editorcleanonpaste'] = 'Clean Word HTML on paste';
 $string['editorcommonsettings'] = 'Common settings';
