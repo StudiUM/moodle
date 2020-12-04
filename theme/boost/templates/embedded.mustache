@@ -55,7 +55,8 @@
 </html>
 {{#js}}
 M.util.js_pending('theme_boost/loader');
-require(['theme_boost/loader'], function() {
+require(['theme_boost/embedpage', 'theme_boost/loader'], function(embedpage) {
   M.util.js_complete('theme_boost/loader');
+  embedpage.init();
 });
 {{/js}}

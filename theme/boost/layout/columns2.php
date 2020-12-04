@@ -26,6 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 user_preference_allow_ajax_update('drawer-open-nav', PARAM_ALPHA);
 require_once($CFG->libdir . '/behat/lib.php');
+global $SESSION;
+$embed = optional_param('embed', null, PARAM_INT);
 
 if (isloggedin()) {
     $navdraweropen = (get_user_preferences('drawer-open-nav', 'true') == 'true');
@@ -56,5 +58,19 @@ $templatecontext = [
 $nav = $PAGE->flatnav;
 $templatecontext['flatnavigation'] = $nav;
 $templatecontext['firstcollectionlabel'] = $nav->get_collectionlabel();
-echo $OUTPUT->render_from_template('theme_boost/columns2', $templatecontext);
+// The embed = 0 parameter has been added, get out of embeded mode.
+if ($embed === 0 || $embed === '0') {
+    unset($SESSION->embed);
+}
+$embedsession = isset($SESSION->embed) ? true : false;
+
+if ($embed || $embedsession) {
+    if (!$embedsession) {
+        $SESSION->embed = true;
+    }
+    echo $OUTPUT->render_from_template('theme_boost/embedded', $templatecontext);
+} else {
+    echo $OUTPUT->render_from_template('theme_boost/columns2', $templatecontext);
+}
+
 
