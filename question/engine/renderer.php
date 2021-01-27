@@ -298,9 +298,6 @@ class core_question_renderer extends plugin_renderer_base {
 
                 $divattributes = array(
                     'class' => 'questionflag editable',
-                    'aria-atomic' => 'true',
-                    'aria-relevant' => 'text',
-                    'aria-live' => 'assertive',
                 );
 
                 break;

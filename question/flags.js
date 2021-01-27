@@ -30,11 +30,16 @@ M.core_question_flags = {
     actionurl: null,
     flagtext: null,
     listeners: [],
+    flagalts: [],
 
     init: function(Y, actionurl, flagattributes, flagtext) {
         M.core_question_flags.flagattributes = flagattributes;
         M.core_question_flags.actionurl = actionurl;
         M.core_question_flags.flagtext = flagtext;
+        M.core_question_flags.flagalts[0] = M.core_question_flags.flagattributes[0].alt;
+        M.core_question_flags.flagalts[1] = M.core_question_flags.flagattributes[1].alt;
+        delete M.core_question_flags.flagattributes[0].alt;
+        delete M.core_question_flags.flagattributes[1].alt;
 
         Y.all('div.questionflag').each(function(flagdiv, i) {
             var checkbox = flagdiv.one('input[type=checkbox]');
@@ -47,14 +52,17 @@ M.core_question_flags = {
             input.set('name', checkbox.get('name'));
             input.set('value', checkbox.get('checked') ? 1 : 0);
 
+
+            var stateflag = Y.Node.create('<div class="stateflag accesshide" aria-atomic="true" aria-relevant="additions text" aria-live="assertive">.</div>');
+            var flagtext = Y.Node.create('<span class="questionflagtext">.</span>');
             // Create an image input to replace the img tag.
             var image = Y.Node.create('<input type="image" class="questionflagimage" />');
-            var flagtext = Y.Node.create('<span class="questionflagtext">.</span>');
-            M.core_question_flags.update_flag(input, image, flagtext);
+            M.core_question_flags.update_flag(input, image, flagtext, stateflag);
 
             checkbox.remove();
             flagdiv.one('label').remove();
             flagdiv.append(input);
+            flagdiv.append(stateflag);
             flagdiv.append(image);
             flagdiv.append(flagtext);
         });
@@ -63,7 +71,7 @@ M.core_question_flags = {
             var input = this.one('input.questionflagvalue');
             input.set('value', 1 - input.get('value'));
             M.core_question_flags.update_flag(input, this.one('input.questionflagimage'),
-                    this.one('span.questionflagtext'));
+                    this.one('span.questionflagtext'), this.one('div.stateflag'));
             var postdata = this.one('input.questionflagpostdata').get('value') +
                     input.get('value');
 
@@ -73,12 +81,15 @@ M.core_question_flags = {
         }, document.body, 'div.questionflag');
     },
 
-    update_flag: function(input, image, flagtext) {
+    update_flag: function(input, image, flagtext, stateflag) {
         var value = input.get('value');
         image.setAttrs(M.core_question_flags.flagattributes[value]);
         flagtext.replaceChild(flagtext.create(M.core_question_flags.flagtext[value]),
                 flagtext.get('firstChild'));
         flagtext.set('title', M.core_question_flags.flagattributes[value].title);
+        flagtext.set('aria-hidden', 'true');
+        var stateflagcontent = Y.Node.create('<span>' + M.core_question_flags.flagalts[value] + '</span>');
+        stateflag.replaceChild(stateflagcontent, stateflag.get('firstChild'));
     },
 
     add_listener: function(listener) {
