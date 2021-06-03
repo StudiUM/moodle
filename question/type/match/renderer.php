@@ -57,9 +57,9 @@ class qtype_match_renderer extends qtype_with_combined_feedback_renderer {
 
             $result .= html_writer::start_tag('tr', array('class' => 'r' . $parity));
             $fieldname = 'sub' . $key;
-
+            $labelledby = 'label' . $qa->get_qt_field_name('sub' . $key);
             $result .= html_writer::tag('td', $this->format_stem_text($qa, $stemid),
-                    array('class' => 'text'));
+                    array('class' => 'text', 'id' => $labelledby));
 
             $classes = 'control';
             $feedbackimage = '';
@@ -78,12 +78,9 @@ class qtype_match_renderer extends qtype_with_combined_feedback_renderer {
             }
 
             $result .= html_writer::tag('td',
-                    html_writer::label(get_string('answer', 'qtype_match', $i),
-                            'menu' . $qa->get_qt_field_name('sub' . $key), false,
-                            array('class' => 'accesshide')) .
                     html_writer::select($choices, $qa->get_qt_field_name('sub' . $key), $selected,
-                            array('0' => 'choose'), array('disabled' => $options->readonly, 'class' => 'custom-select ml-1')) .
-                    ' ' . $feedbackimage, array('class' => $classes));
+                            array('0' => 'choose'), array('disabled' => $options->readonly, 'class' => 'custom-select ml-1',
+                            'aria-labelledby' => $labelledby)) . ' ' . $feedbackimage, array('class' => $classes));
 
             $result .= html_writer::end_tag('tr');
             $parity = 1 - $parity;
