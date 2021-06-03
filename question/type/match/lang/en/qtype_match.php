@@ -22,7 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['answer'] = 'Answer {$a}';
 $string['availablechoices'] = 'Available choices';
 $string['blanksforxmorequestions'] = 'Blanks for {no} more questions';
 $string['correctansweris'] = 'The correct answer is: {$a}';
@@ -46,3 +45,5 @@ $string['privacy:metadata'] = 'Matching question type plugin allows question aut
 $string['privacy:preference:defaultmark'] = 'The default mark set for a given question.';
 $string['privacy:preference:penalty'] = 'The penalty for each incorrect try when questions are run using the \'Interactive with multiple tries\' or \'Adaptive mode\' behaviour.';
 $string['privacy:preference:shuffleanswers'] = 'Whether the answers should be automatically shuffled.';
+// Deprecated since Moodle 4.0.
+$string['answer'] = 'Answer {$a}';
