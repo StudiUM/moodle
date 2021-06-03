@@ -22,7 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['answer'] = 'Answer {$a}';
 $string['availablechoices'] = 'Available choices';
 $string['blanksforxmorequestions'] = 'Blanks for {no} more questions';
 $string['correctansweris'] = 'The correct answer is: {$a}';
