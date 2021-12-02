@@ -279,4 +279,27 @@ class core_renderer extends \core_renderer {
         }
         return $firstview;
     }
+
+    /**
+     * Return the udem env.
+     *
+     * @return string Env
+     */
+    public function env() {
+        global $CFG;
+        return $CFG->theme;
+    }
+
+    /**
+     * Return the udem env.
+     *
+     * @return string Env
+     */
+    public function primarycolor() {
+        return $this->page->theme->settings->brandcolor;
+    }
+
+    public function favicon() {
+        return $this->image_url("$CFG->theme/icons/favicon-16x16", 'theme');
+    }
 }

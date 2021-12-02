@@ -163,3 +163,25 @@ function theme_boost_get_pre_scss($theme) {
 
     return $scss;
 }
+
+/**
+ * Get htmlattributes.
+ *
+ * @param theme_config $theme The theme config object.
+ * @return array
+ */
+function theme_boost_add_htmlattributes() {
+    global $CFG;
+    return ['id' => $CFG->theme];
+}
+
+/**
+ * Get extra head.
+ *
+ * @param theme_config $theme The theme config object.
+ * @return array
+ */
+function theme_boost_before_standard_html_head() {
+    global $OUTPUT;
+    return $OUTPUT->render_from_template('theme_boost/head_udem', ['output' => $OUTPUT]);
+}
