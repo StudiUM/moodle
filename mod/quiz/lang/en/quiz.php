@@ -885,6 +885,7 @@ $string['reviewoverallfeedback'] = 'Overall feedback';
 $string['reviewoverallfeedback_help'] = 'The feedback given at the end of the attempt, depending on the student\'s total mark.';
 $string['reviewresponse'] = 'Review response';
 $string['reviewresponsetoq'] = 'Review response (question {$a})';
+$string['reviewsummary'] = 'Review summary';
 $string['reviewthisattempt'] = 'Review your responses to this attempt';
 $string['rqp'] = 'Remote question';
 $string['rqps'] = 'Remote questions';
