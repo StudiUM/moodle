@@ -559,6 +559,17 @@ const renderEventSummaryModal = (eventId) => {
     .catch(Notification.exception);
 };
 
+/**
+ * Reload the group selector when changing course.
+ *
+ * @param {number} courseId The course id.
+ * @return {promise}
+ */
+export const reloadGroupSelector = (courseId = 0) => {
+    return CalendarRepository.getCourseGroupsData(courseId)
+        .fail(Notification.exception);
+};
+
 export const init = (root, view) => {
     prefetchStrings('calendar', ['moreevents']);
     foldDayEvents();

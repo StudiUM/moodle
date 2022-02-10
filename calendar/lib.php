@@ -2464,6 +2464,37 @@ function calendar_get_default_courses($courseid = null, $fields = '*', $canmanag
 }
 
 /**
+ * Returns the default course groups to display on the calendar.
+ *
+ * @param int $courseid (optional) If passed, groups from this course will be returned (the current course).
+ * @param int $userid (optional) The user which this function returns the default courses for. By default the current user.
+ * @param bool $canaccessall If true, this will return the list of all groups in a course.
+ *
+ * @return array $groups Array of course groups to display
+ */
+function calendar_get_default_course_groups($courseid = 1, int $userid = null, $canaccessall = false) {
+    global $CFG, $USER;
+
+    if (!$userid) {
+        if (!isloggedin()) {
+            return array();
+        }
+
+        $userid = $USER->id;
+    }
+
+    if ((!empty($CFG->calendar_adminseesall) || $canaccessall) &&
+        has_capability('moodle/calendar:manageentries', context_course::instance($courseid), $userid)) {
+
+        $groups = groups_get_all_groups($courseid);
+    } else {
+        $groups = groups_get_all_groups($courseid, $userid);
+    }
+
+    return $groups;
+}
+
+/**
  * Get event format time.
  *
  * @param calendar_event $event event object
@@ -3509,6 +3540,7 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
         $month->set_includenavigation($includenavigation);
         $month->set_initialeventsloaded(!$skipevents);
         $month->set_showcoursefilter(($view == "month" || $view == "monthblock"));
+        $month->set_showgroupfilter(($view == "month" || $view == "monthblock"));
         $data = $month->export($renderer);
     } else if ($view == "day") {
         $day = new \core_calendar\external\calendar_day_exporter($calendar, $related);

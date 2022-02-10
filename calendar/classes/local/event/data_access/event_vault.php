@@ -146,7 +146,7 @@ class event_vault implements event_vault_interface {
             $timesorttoquery ? $timesorttoquery['params'] : [],
             $timestartfromquery ? $timestartfromquery['params'] : [],
             $timestarttoquery ? $timestarttoquery['params'] : [],
-            $searchquery ? $searchquery['params'] : [],
+            $searchquery ? $searchquery['params'] : []
         );
 
         $where = array_merge(
@@ -155,7 +155,7 @@ class event_vault implements event_vault_interface {
             $timesorttoquery ? $timesorttoquery['where'] : [],
             $timestartfromquery ? $timestartfromquery['where'] : [],
             $timestarttoquery ? $timestarttoquery['where'] : [],
-            $searchquery ? [$searchquery['where']] : [],
+            $searchquery ? [$searchquery['where']] : []
         );
 
         $offset = 0;
@@ -432,7 +432,7 @@ class event_vault implements event_vault_interface {
         // Search in modules' singular and plural names.
         $modules = array_keys(array_merge(
             preg_grep('/' . $searchvalue . '/i', get_module_types_names()) ?: [],
-            preg_grep('/' . $searchvalue . '/i', get_module_types_names(true)) ?: [],
+            preg_grep('/' . $searchvalue . '/i', get_module_types_names(true)) ?: []
         ));
         if ($modules) {
             [$insql, $inparams] = $DB->get_in_or_equal($modules, SQL_PARAMS_NAMED, 'exactmodulename');

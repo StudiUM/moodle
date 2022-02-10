@@ -76,7 +76,10 @@ class calendar_upcoming_exporter extends exporter {
                 'type' => PARAM_INT,
                 'default' => 0,
             ],
-            'filter_selector' => [
+            'course_filter_selector' => [
+                'type' => PARAM_RAW,
+            ],
+            'group_filter_selector' => [
                 'type' => PARAM_RAW,
             ],
             'courseid' => [
@@ -139,7 +142,13 @@ class calendar_upcoming_exporter extends exporter {
         if ($context = $this->get_default_add_context()) {
             $return['defaulteventcontext'] = $context->id;
         }
-        $return['filter_selector'] = $this->get_course_filter_selector($output);
+        $return['course_filter_selector'] = $this->get_course_filter_selector($output);
+        $return['group_filter_selector'] = $this->get_group_filter_selector($output);
+
+        if (strpos($return['group_filter_selector'], 'display: none') === false) {
+            $return['course_filter_selector'] = str_replace('ml-1 mr-auto', 'ml-1', $return['course_filter_selector']);
+        }
+
         $return['courseid'] = $this->calendar->courseid;
         $date = $this->related['type']->timestamp_to_date_array($this->calendar->time);
         $return['date'] = (new date_exporter($date))->export($output);
@@ -171,6 +180,19 @@ class calendar_upcoming_exporter extends exporter {
      */
     protected function get_course_filter_selector(renderer_base $output) {
         return $output->course_filter_selector($this->url, '', $this->calendar->course->id);
+    }
+
+    /**
+     * Get the group filter selector.
+     *
+     * @param renderer_base $output
+     * @return string The html code for the course filter selector.
+     */
+    protected function get_group_filter_selector(renderer_base $output) {
+        $content = '';
+        $content .= $output->group_filter_selector($this->url, '', $this->calendar->course->id);
+
+        return $content;
     }
 
     /**
