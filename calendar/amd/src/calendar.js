@@ -190,10 +190,52 @@ define([
         root.on('change', CalendarSelectors.elements.courseSelector, function() {
             var selectElement = $(this);
             var courseId = selectElement.val();
+            var courseSelector = root.find(CalendarSelectors.elements.courseSelector);
+
+            var groupSelector = root.find(CalendarSelectors.elements.groupSelector);
+            var firstOption = groupSelector.children().first();
+            groupSelector.empty();
+            groupSelector.append('<option value="' + firstOption.val() + '">' + firstOption.text() + '</option>');
+
+            if (courseId > 1) {
+                CalendarViewManager.reloadGroupSelector(courseId)
+                    .done(function(data) {
+                        if (data.length === 0) {
+                            groupSelector.hide();
+                            courseSelector.addClass('mr-auto');
+                        } else {
+                            groupSelector.show();
+                            courseSelector.removeClass('mr-auto');
+
+                            $.each(data, function(index, value) {
+                                $("<option/>", {
+                                    value: value.id,
+                                    text: value.name.length > 15 ? value.name.substring(0, 14) + '...' : value.name
+                                }).appendTo(groupSelector);
+                            });
+                        }
+                    });
+            } else {
+                groupSelector.hide();
+                courseSelector.addClass('mr-auto');
+            }
+
             CalendarViewManager.reloadCurrentMonth(root, courseId, null)
                 .then(function() {
-                    // We need to get the selector again because the content has changed.
+                    // We need to get the course selector again because the content has changed.
                     return root.find(CalendarSelectors.elements.courseSelector).val(courseId);
+                })
+                .fail(Notification.exception);
+        });
+
+        root.on('change', CalendarSelectors.elements.groupSelector, function() {
+            var selectElement = $(this);
+            var groupId = selectElement.val();
+            var courseId = root.find(CalendarSelectors.elements.courseSelector).val();
+            CalendarViewManager.reloadCurrentMonth(root, courseId, null)
+                .then(function() {
+                    // We need to get the group selector again because the content has changed.
+                    return root.find(CalendarSelectors.elements.groupSelector).val(groupId);
                 })
                 .fail(Notification.exception);
         });
@@ -204,13 +246,13 @@ define([
 
         if (contextId) {
             // Bind click events to calendar days.
-            root.on('click', SELECTORS.DAY, function (e) {
+            root.on('click', SELECTORS.DAY, function(e) {
 
                 var target = $(e.target);
 
                 if (!target.is(SELECTORS.VIEW_DAY_LINK)) {
                     var startTime = $(this).attr('data-new-event-timestamp');
-                    eventFormPromise.then(function (modal) {
+                    eventFormPromise.then(function(modal) {
                         var wrapper = target.closest(CalendarSelectors.wrapper);
                         modal.setCourseId(wrapper.data('courseid'));
 
