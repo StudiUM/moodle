@@ -240,7 +240,7 @@ class core_calendar_renderer extends plugin_renderer_base {
     /**
      * Displays a course filter selector
      *
-     * @param moodle_url $returnurl The URL that the user should be taken too upon selecting a course.
+     * @param moodle_url $returnurl The URL that the user should be taken to upon selecting a course.
      * @param string $label The label to use for the course select.
      * @param int $courseid The id of the course to be selected.
      * @return string
@@ -304,6 +304,81 @@ class core_calendar_renderer extends plugin_renderer_base {
         $select = html_writer::label($label, 'course', false, $labelattributes);
         $select .= html_writer::select($courseoptions, 'course', $selected, false,
                 ['class' => 'cal_courses_flt ml-1 mr-auto', 'id' => 'course']);
+
+        return $select;
+    }
+
+    /**
+     * Displays a group filter selector
+     *
+     * @param moodle_url $returnurl
+     * @param string $label
+     * @param int $courseid
+     * @param int $groupid
+     *
+     * @return string
+     *
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    public function group_filter_selector(moodle_url $returnurl, $label = null, $courseid = null, $groupid = null) {
+        global $USER, $DB;
+
+        $canaccessall = false;
+
+        if (!isloggedin() or isguestuser()) {
+            return '';
+        }
+
+        $context = context_course::instance($courseid);
+
+        if (has_capability('moodle/site:accessallgroups', $context)) {
+            $canaccessall = true;
+        }
+
+        $groups = calendar_get_default_course_groups($courseid, $USER->id, $canaccessall);
+
+        $groupoptions = array();
+        $groupoptions[0] = get_string('fulllistofgroups');
+
+        // @todo Use caching for groups (must be tied in to the course id).
+        $contextrecords = [];
+
+        if (!empty($groups)) {
+            foreach ($groups as $group) {
+                /*if (isset($contextrecords[$group->id])) {
+                    context_helper::preload_from_record($contextrecords[$group->id]);
+                }*/
+                //$groupcontext = context_course::instance($group->id);
+                $group->name = strlen($group->name) > 15 ? substr($group->name, 0, 14) . '...' : $group->name;
+                $groupoptions[$group->id] = format_string($group->name, true);
+            }
+        }
+
+        if ($groupid) {
+            $selected = $groupid;
+        } else {
+            $selected = 0;
+        }
+
+        $courseurl = new moodle_url($returnurl);
+        $courseurl->remove_params('course');
+
+        $labelattributes = [];
+        if (empty($label)) {
+            $label = get_string('listofgroups');
+            $labelattributes['class'] = 'sr-only';
+        }
+
+        $select = html_writer::label($label, 'coursegroups', false, $labelattributes);
+
+        if (empty($groups)) {
+            $select .= html_writer::select($groupoptions, 'coursegroups', $selected, false,
+                ['class' => 'cal_groups_flt ml-1 mr-auto', 'id' => 'coursegroups', 'style' => 'display: none;']);
+        } else {
+            $select .= html_writer::select($groupoptions, 'coursegroups', $selected, false,
+                ['class' => 'cal_groups_flt ml-1 mr-auto', 'id' => 'coursegroups']);
+        }
 
         return $select;
     }
