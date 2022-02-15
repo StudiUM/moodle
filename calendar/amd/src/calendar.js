@@ -144,12 +144,15 @@ define([
 
         body.on(CalendarEvents.created, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.deleted, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.updated, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.editActionEvent, function(e, url) {
             // Action events needs to be edit directly on the course module.
@@ -201,9 +204,11 @@ define([
                 CalendarViewManager.reloadGroupSelector(courseId)
                     .done(function(data) {
                         if (data.length === 0) {
+                            $('#coursegroupslabel').hide();
                             groupSelector.hide();
                             courseSelector.addClass('mr-auto');
                         } else {
+                            $('#coursegroupslabel').show();
                             groupSelector.show();
                             courseSelector.removeClass('mr-auto');
 
@@ -229,15 +234,18 @@ define([
         });
 
         root.on('change', CalendarSelectors.elements.groupSelector, function() {
-            var selectElement = $(this);
-            var groupId = selectElement.val();
-            var courseId = root.find(CalendarSelectors.elements.courseSelector).val();
-            CalendarViewManager.reloadCurrentMonth(root, courseId, null)
-                .then(function() {
-                    // We need to get the group selector again because the content has changed.
-                    return root.find(CalendarSelectors.elements.groupSelector).val(groupId);
-                })
-                .fail(Notification.exception);
+            var groupId = parseInt($(this).val());
+            var groupEvents = root.find(CalendarSelectors.eventType.group);
+
+            $.each(groupEvents.children(), function (index, value) {
+                let eventElement = $(value);
+
+                if (groupId === 0 || eventElement.data('event-groupid') === groupId) {
+                    eventElement.parent('li').show();
+                } else {
+                    eventElement.parent('li').hide();
+                }
+            });
         });
 
         var eventFormPromise = CalendarCrud.registerEventFormModal(root),
