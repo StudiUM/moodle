@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This module is responsible for handle calendar day and upcoming view.
+ * This module is responsible for handling calendar day and upcoming view.
  *
  * @module     core_calendar/calendar
  * @copyright  2017 Simey Lameze <simey@moodle.com>
@@ -56,12 +56,15 @@ define([
 
             body.on(CalendarEvents.created, function() {
                 CalendarViewManager[reloadFunction](root);
+                root.find(CalendarSelectors.groupSelector).val(0);
             });
             body.on(CalendarEvents.deleted, function() {
                 CalendarViewManager[reloadFunction](root);
+                root.find(CalendarSelectors.groupSelector).val(0);
             });
             body.on(CalendarEvents.updated, function() {
                 CalendarViewManager[reloadFunction](root);
+                root.find(CalendarSelectors.groupSelector).val(0);
             });
 
             root.on('change', CalendarSelectors.courseSelector, function() {
@@ -78,9 +81,11 @@ define([
                     CalendarViewManager.reloadGroupSelector(courseId)
                         .done(function(data) {
                             if (data.length === 0) {
+                                $('#coursegroupslabel').hide();
                                 groupSelector.hide();
                                 courseSelector.addClass('mr-auto');
                             } else {
+                                $('#coursegroupslabel').show();
                                 groupSelector.show();
                                 courseSelector.removeClass('mr-auto');
 
@@ -111,16 +116,38 @@ define([
             });
 
             root.on('change', CalendarSelectors.elements.groupSelector, function() {
-                var selectElement = $(this);
-                var groupId = selectElement.val();
-                var courseId = root.find(CalendarSelectors.elements.courseSelector).val();
+                var groupId = parseInt($(this).val());
+                var groupEvents = root.find(CalendarSelectors.eventType.group);
+                var nogroupsElement = $('#nogroups');
+                var eventCount = 0;
 
-                CalendarViewManager.reloadCurrentMonth(root, courseId, null)
-                    .then(function() {
-                        // We need to get the group selector again because the content has changed.
-                        return root.find(CalendarSelectors.elements.groupSelector).val(groupId);
-                    })
-                    .fail(Notification.exception);
+                if (nogroupsElement.length > 0) {
+                    nogroupsElement.remove();
+                }
+
+                if (groupEvents.length > 0) {
+                    $.each(groupEvents, function(index, value) {
+                        let eventElement = $(value);
+
+                        if (groupId === 0 || eventElement.data('event-groupid') === groupId) {
+                            eventElement.show();
+                            eventCount++;
+                        } else {
+                            eventElement.hide();
+                        }
+                    });
+
+                    if (eventCount === 0) {
+                        var eventlistElement = $(".eventlist");
+                        var nogroupeventsElement = $('<span id="nogroups" class="calendar-information calendar-no-results"></span>')
+                            .appendTo(eventlistElement);
+
+                        Str.get_string('nogroupevents', 'core_calendar')
+                            .done(function(data) {
+                                nogroupeventsElement.text(data);
+                            });
+                    }
+                }
             });
 
             body.on(CalendarEvents.filterChanged, function(e, data) {

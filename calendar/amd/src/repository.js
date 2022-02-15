@@ -184,7 +184,7 @@ export const getCalendarUpcomingData = (courseId, categoryId) => {
  * @param {Number} courseId The course id to fetch the groups from.
  * @return {promise} Resolved with the course groups.
  */
-export const getCourseGroupsData = (courseId) => {
+export const getCourseGroups = (courseId) => {
     const request = {
         methodname: 'core_group_get_course_groups',
         args: {
