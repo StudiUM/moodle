@@ -84,9 +84,11 @@ const registerEventListeners = (root) => {
         const link = e.currentTarget;
 
         if (view === 'month') {
+            root.find(CalendarSelectors.groupSelector).val(0);
             changeMonth(root, link.href, link.dataset.year, link.dataset.month, courseId, categoryId, link.dataset.day);
             e.preventDefault();
         } else if (view === 'day') {
+            root.find(CalendarSelectors.groupSelector).val(0);
             changeDay(root, link.href, link.dataset.year, link.dataset.month, link.dataset.day, courseId, categoryId);
             e.preventDefault();
         }
@@ -430,6 +432,17 @@ const renderEventSummaryModal = (eventId) => {
         return modal;
     })
     .catch(Notification.exception);
+};
+
+/**
+ * Reload the group selector when changing course.
+ *
+ * @param {number} courseId The course id.
+ * @return {promise}
+ */
+export const reloadGroupSelector = (courseId = 0) => {
+    return CalendarRepository.getCourseGroupsData(courseId)
+        .fail(Notification.exception);
 };
 
 export const init = (root, view) => {

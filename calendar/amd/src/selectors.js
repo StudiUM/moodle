@@ -43,6 +43,7 @@ define([], function() {
             month: "[data-period='month']",
         },
         courseSelector: 'select[name="course"]',
+        groupSelector: 'select[name="coursegroups"]',
         viewSelector: 'div[data-region="view-selector"]',
         actions: {
             create: '[data-action="new-event-button"]',
@@ -52,6 +53,7 @@ define([], function() {
         },
         elements: {
             courseSelector: 'select[name="course"]',
+            groupSelector: 'select[name="coursegroups"]',
         },
         today: '.today',
         day: '[data-region="day"]',

@@ -241,6 +241,8 @@ class core_group_external extends external_api {
      * @since Moodle 2.2
      */
     public static function get_course_groups($courseid) {
+        global $USER;
+
         $params = self::validate_parameters(self::get_course_groups_parameters(), array('courseid'=>$courseid));
 
         // now security checks
@@ -253,10 +255,14 @@ class core_group_external extends external_api {
                 $exceptionparam->courseid = $params['courseid'];
                 throw new moodle_exception('errorcoursecontextnotvalid' , 'webservice', '', $exceptionparam);
         }
-        require_capability('moodle/course:managegroups', $context);
 
-        $gs = groups_get_all_groups($params['courseid'], 0, 0,
-            'g.id, g.courseid, g.name, g.idnumber, g.description, g.descriptionformat, g.enrolmentkey');
+        if (has_capability('moodle/course:managegroups', $context)) {
+            $gs = groups_get_all_groups($params['courseid'], 0, 0,
+                'g.id, g.courseid, g.name, g.idnumber, g.description, g.descriptionformat, g.enrolmentkey');
+        } else {
+            $gs = groups_get_all_groups($params['courseid'], $USER->id, 0,
+                'g.id, g.courseid, g.name, g.idnumber, g.description, g.descriptionformat, g.enrolmentkey');
+        }
 
         $groups = array();
         foreach ($gs as $group) {
