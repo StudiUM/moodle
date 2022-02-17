@@ -351,15 +351,8 @@ class core_calendar_renderer extends plugin_renderer_base {
         $groupoptions = array();
         $groupoptions[0] = get_string('fulllistofgroups');
 
-        // @todo Use caching for groups (must be tied in to the course id).
-        $contextrecords = [];
-
         if (!empty($groups)) {
             foreach ($groups as $group) {
-                /*if (isset($contextrecords[$group->id])) {
-                    context_helper::preload_from_record($contextrecords[$group->id]);
-                }*/
-                //$groupcontext = context_course::instance($group->id);
                 $group->name = strlen($group->name) > 15 ? substr($group->name, 0, 14) . '...' : $group->name;
                 $groupoptions[$group->id] = format_string($group->name, true);
             }
@@ -375,17 +368,22 @@ class core_calendar_renderer extends plugin_renderer_base {
         $courseurl->remove_params('course');
 
         $labelattributes = [];
+        $labelattributes['id'] = 'coursegroupslabel';
+        $labelattributes['class'] = 'sr-only';
+
         if (empty($label)) {
             $label = get_string('listofgroups');
-            $labelattributes['class'] = 'sr-only';
         }
 
-        $select = html_writer::label($label, 'coursegroups', false, $labelattributes);
-
         if (empty($groups)) {
+            $labelattributes['style'] = 'display: none;';
+            $select = html_writer::label($label, 'coursegroups', false, $labelattributes);
+
             $select .= html_writer::select($groupoptions, 'coursegroups', $selected, false,
-                ['class' => 'cal_groups_flt ml-1 mr-auto', 'id' => 'coursegroups', 'style' => 'display: none;']);
+                ['class' => 'cal_groups_flt ml-1 mr-auto', 'id' => 'coursegroups-filter-1', 'style' => 'display: none;']);
         } else {
+            $select = html_writer::label($label, 'coursegroups', false, $labelattributes);
+
             $select .= html_writer::select($groupoptions, 'coursegroups', $selected, false,
                 ['class' => 'cal_groups_flt ml-1 mr-auto', 'id' => 'coursegroups']);
         }

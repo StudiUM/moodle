@@ -26,12 +26,14 @@
  */
 define([
     'jquery',
+    'core/str',
     'core_calendar/selectors',
     'core_calendar/events',
     'core_calendar/view_manager',
 ],
 function(
     $,
+    Str,
     CalendarSelectors,
     CalendarEvents,
     CalendarViewManager
@@ -65,6 +67,7 @@ function(
 
         if (root.is(':visible')) {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         } else {
             // The root has been removed.
             // Remove all events in the namespace.
@@ -99,9 +102,11 @@ function(
                     CalendarViewManager.reloadGroupSelector(courseId)
                         .done(function(data) {
                             if (data.length === 0) {
+                                $('#coursegroupslabel').hide();
                                 groupSelector.hide();
                                 courseSelector.addClass('mr-auto');
                             } else {
+                                $('#coursegroupslabel').show();
                                 groupSelector.show();
                                 courseSelector.removeClass('mr-auto');
 
@@ -125,15 +130,38 @@ function(
         });
 
         root.on('change', CalendarSelectors.elements.groupSelector, function() {
-            var selectElement = $(this);
-            var groupId = selectElement.val();
-            var courseId = root.find(CalendarSelectors.elements.courseSelector).val();
-            CalendarViewManager.reloadCurrentMonth(root, courseId, null)
-                .then(function() {
-                    // We need to get the group selector again because the content has changed.
-                    return root.find(CalendarSelectors.elements.groupSelector).val(groupId);
-                })
-                .fail(Notification.exception);
+            var groupId = parseInt($(this).val());
+            var groupEvents = root.find(CalendarSelectors.eventType.group);
+            var nogroupsElement = $('#nogroups');
+            var eventCount = 0;
+
+            if (nogroupsElement.length > 0) {
+                nogroupsElement.remove();
+            }
+
+            if (groupEvents.length > 0) {
+                $.each(groupEvents, function (index, value) {
+                    let eventElement = $(value);
+
+                    if (groupId === 0 || eventElement.data('event-groupid') === groupId) {
+                        eventElement.show();
+                        eventCount++;
+                    } else {
+                        eventElement.hide();
+                    }
+                });
+
+                if (eventCount === 0) {
+                    var eventlistElement = $(".eventlist");
+                    var nogroupeventsElement = $('<span id="nogroups" class="calendar-information calendar-no-results"></span>')
+                        .appendTo(eventlistElement);
+
+                    Str.get_string('nogroupevents', 'core_calendar')
+                        .done(function (data) {
+                            nogroupeventsElement.text(data);
+                        });
+                }
+            }
         });
     };
 

@@ -160,4 +160,112 @@ class behat_calendar extends behat_base {
         $url = new moodle_url('/calendar/view.php', ['view' => 'month']);
         $this->execute('behat_general::i_visit', [$url]);
     }
+
+    /**
+     * Selects a course selector's option.
+     *
+     * @Given /^I choose "([^"]*)" from the course selector$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_choose_from_the_course_selector($optionvalue) {
+        $select = '//select[@name="course"]';
+        $selectfield = $this->getSession()->getPage()->find('xpath', $select);
+        if (NULL === $selectfield) {
+            throw new \Exception(sprintf('The select "%s" was not found in page %s', $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $optionfield = $selectfield->find('xpath', '//option[.="' . $optionvalue . '"]');
+        if (NULL === $optionfield) {
+            throw new \Exception(sprintf('The option %s was not found in the %s select in page %s', $optionvalue, $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $selectfield->selectOption($optionfield->getValue());
+    }
+
+    /**
+     * Checks to see if the group selector is visible.
+     *
+     * @Given /^I should see the group selector$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_should_see_the_group_selector() {
+        $select = '//select[@name="coursegroups"]';
+        $this->execute('behat_general::should_be_visible', array($select, 'xpath_element'));
+    }
+
+    /**
+     * Checks to see if the group selector is hidden.
+     *
+     * @Given /^I should not see the group selector$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_should_not_see_the_group_selector() {
+        $select = '//select[@name="coursegroups"]';
+        $this->execute('behat_general::should_not_be_visible', array($select, 'xpath_element'));
+    }
+
+    /**
+     * Checks if a group selector's option is available.
+     *
+     * @Given /^I should see that the option "([^"]*)" from the group selector is available$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_should_see_that_the_option_from_select_is_available($optionvalue) {
+        $select = '//select[@name="coursegroups"]';
+        $selectfield = $this->getSession()->getPage()->find('xpath', $select);
+        if ($selectfield === null) {
+            throw new \Exception(sprintf('The select "%s" was not found in page %s', $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $optionfield = $selectfield->find('xpath', '//option[.="' . $optionvalue . '"]');
+        if ($optionfield === null) {
+            throw new \Exception(sprintf('The option %s was not found in the %s select in page %s', $optionvalue, $select, $this->getSession()->getCurrentUrl()));
+        }
+    }
+
+    /**
+     * Checks if a group selector's option is not available.
+     *
+     * @Given /^I should see that the option "([^"]*)" from the group selector is not available$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_should_see_that_the_option_from_select_is_not_available($optionvalue) {
+        $select = '//select[@name="coursegroups"]';
+        $selectfield = $this->getSession()->getPage()->find('xpath', $select);
+        if ($selectfield === null) {
+            throw new \Exception(sprintf('The select "%s" was not found in page %s', $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $optionfield = $selectfield->find('xpath', '//option[.="' . $optionvalue . '"]');
+        if ($optionfield !== null) {
+            throw new \Exception(sprintf('The option %s was found in the %s select in page %s', $optionvalue, $select, $this->getSession()->getCurrentUrl()));
+        }
+    }
+
+    /**
+     * Selects a group selector's option.
+     *
+     * @Given /^I choose "([^"]*)" from the group selector$/
+     * @throws Exception
+     * @return void
+     */
+    public function i_choose_from_the_group_selector($optionvalue) {
+        $select = '//select[@name="coursegroups"]';
+        $selectfield = $this->getSession()->getPage()->find('xpath', $select);
+        if (NULL === $selectfield) {
+            throw new \Exception(sprintf('The select "%s" was not found in page %s', $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $optionfield = $selectfield->find('xpath', '//option[.="' . $optionvalue . '"]');
+        if (NULL === $optionfield) {
+            throw new \Exception(sprintf('The option %s was not found in the %s select in page %s', $optionvalue, $select, $this->getSession()->getCurrentUrl()));
+        }
+
+        $selectfield->selectOption($optionfield->getValue());
+    }
 }

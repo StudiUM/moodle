@@ -19,18 +19,26 @@ Feature: Perform basic calendar functionality
     And the following "course enrolments" exist:
       | user | course | role |
       | student1 | C1 | student |
-      | student3 | C1 | student |
+      | student2 | C1 | student |
+      | student2 | C2 | student |
+      | student3 | C2 | student |
       | teacher1 | C1 | teacher |
+      | teacher1 | C2 | teacher |
     And the following "groups" exist:
       | name | course | idnumber |
       | Group 1 | C1 | G1 |
+      | Group 2 | C1 | G2 |
     And the following "group members" exist:
       | user | group |
       | student1 | G1 |
+      | student2 | G2 |
       | teacher1 | G1 |
+      | teacher1 | G2 |
     And I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
     And I add the "Calendar" block
+    And I am on "Course 1" course homepage
+    And I follow "Full calendar"
     And I log out
 
   @javascript
@@ -40,14 +48,50 @@ Feature: Perform basic calendar functionality
       | Type of event | site |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
+    Then I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
     And I log out
     And I log in as "student1"
-    And I am on "Course 1" course homepage
     And I follow "Full calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I choose "C1" from the course selector
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
     And I should see "Really awesome event!"
     And I log out
     And I log in as "student2"
     And I follow "Full calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I choose "C1" from the course selector
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I follow "Full calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
     And I should see "Really awesome event!"
 
   @javascript
@@ -58,17 +102,59 @@ Feature: Perform basic calendar functionality
       | Course        | Course 1 |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
+    When I choose "C1" from the course selector
+    Then I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
     And I log out
     And I log in as "student1"
-    When I am on "Course 1" course homepage
     And I follow "Full calendar"
+    And I choose "C1" from the course selector
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C1" from the course selector
     And I click on "Really awesome event!" "link"
     And "Course 1" "link" should exist in the "Really awesome event!" "dialogue"
     And I click on "Close" "button" in the "Really awesome event!" "dialogue"
     And I log out
     And I log in as "student2"
     And I follow "Full calendar"
-    Then I should not see "Really awesome event!"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I choose "C1" from the course selector
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I follow "Full calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
 
   @javascript
   Scenario: Create a group event
@@ -80,11 +166,41 @@ Feature: Perform basic calendar functionality
       | Group         | Group 1 |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event |
+    When I choose "C1" from the course selector
+    Then I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is available
+    And I choose "Group 2" from the group selector
+    And I should not see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
     And I log out
     And I log in as "student1"
-    When I am on "Course 1" course homepage
     And I follow "Full calendar"
-    Then I follow "Really awesome event!"
+    And I choose "C1" from the course selector
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student2"
+    And I follow "Full calendar"
+    And I choose "C1" from the course selector
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should not see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should not see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I follow "Full calendar"
+    And I choose "C2" from the course selector
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
 
   @javascript
   Scenario: Create a user event
@@ -95,8 +211,7 @@ Feature: Perform basic calendar functionality
       | Description | Come join this awesome event, sucka! |
     And I log out
     And I log in as "student1"
-    When I am on "Course 1" course homepage
-    And I follow "Full calendar"
+    When I follow "Full calendar"
     Then I should not see "Really awesome event!"
 
   @javascript
@@ -106,8 +221,8 @@ Feature: Perform basic calendar functionality
       | Type of event | user |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
-    And I am on "Course 1" course homepage
-    When I follow "Full calendar"
+    When I am on homepage
+    And I follow "Full calendar"
     And I click on "Really awesome event!" "link"
     And I click on "Delete" "button" in the "Really awesome event!" "dialogue"
     And I click on "Delete event" "button"
@@ -122,8 +237,8 @@ Feature: Perform basic calendar functionality
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
       | Location | Cube office |
-    And I am on "Course 1" course homepage
-    When I follow "Full calendar"
+    When I am on homepage
+    And I follow "Full calendar"
     And I click on "Really awesome event!" "link"
     And ".location-content" "css_element" should exist
     And I should see "Cube office"
@@ -145,7 +260,8 @@ Feature: Perform basic calendar functionality
     And the following "activities" exist:
       | activity | course | idnumber | name        | intro                   | timeopen      | timeclose     |
       | choice   | C1     | choice1  | Test choice | Test choice description | ##today## | ##today##  |
-    When I follow "Full calendar"
+    When I am on homepage
+    And I follow "Full calendar"
     And I set the field "course" to "C1"
     Then I should see "Test choice opens"
     And I should see "Test choice closes"
@@ -156,7 +272,7 @@ Feature: Perform basic calendar functionality
     When I click on "Go to activity" "link"
     And I wait to be redirected
     Then I should see "Test choice"
-    And I am on "Course 1" course homepage
+    And I am on homepage
     And I follow "Full calendar"
     When I click on "Test choice closes" "link"
     Then "Delete" "button" should not exist in the "Test choice closes" "dialogue"
@@ -169,7 +285,7 @@ Feature: Perform basic calendar functionality
   @javascript
   Scenario: Attempt to create event without fill required fields should display validation errors
     Given I log in as "teacher1"
-    And I am on "Course 1" course homepage
+    And I am on homepage
     And I follow "Full calendar"
     And I click on "New event" "button"
     When I click on "Save" "button"
@@ -224,7 +340,7 @@ Feature: Perform basic calendar functionality
     And I am viewing site calendar
     When I click on "New event" "button"
     Then I should see "User" in the "div#fitem_id_staticeventtype" "css_element"
-    And I am on "Course 1" course homepage
+    And I am on homepage
     And I follow "Full calendar"
     When I click on "New event" "button"
     Then I should see "User" in the "div#fitem_id_staticeventtype" "css_element"
@@ -236,7 +352,7 @@ Feature: Perform basic calendar functionality
     And I press "Save changes"
     And I log out
     Given I log in as "student1"
-    And I am on "Course 1" course homepage
+    And I am on homepage
     And I follow "Full calendar"
     When I click on "New event" "button"
     Then I should see "User" in the "div#fitem_id_staticeventtype" "css_element"
@@ -244,7 +360,7 @@ Feature: Perform basic calendar functionality
   @javascript @accessibility
   Scenario: The calendar page must be accessible
     Given I log in as "student1"
-    And I am on "Course 1" course homepage
+    And I am on homepage
     When I follow "Full calendar"
     Then the page should meet accessibility standards
     And the page should meet "wcag131, wcag143, wcag412" accessibility standards
