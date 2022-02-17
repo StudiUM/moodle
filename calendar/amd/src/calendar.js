@@ -144,12 +144,15 @@ define([
 
         body.on(CalendarEvents.created, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.deleted, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.updated, function() {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         });
         body.on(CalendarEvents.editActionEvent, function(e, url) {
             // Action events needs to be edit directly on the course module.
@@ -190,12 +193,59 @@ define([
         root.on('change', CalendarSelectors.elements.courseSelector, function() {
             var selectElement = $(this);
             var courseId = selectElement.val();
+            var courseSelector = root.find(CalendarSelectors.elements.courseSelector);
+
+            var groupSelector = root.find(CalendarSelectors.elements.groupSelector);
+            var firstOption = groupSelector.children().first();
+            groupSelector.empty();
+            groupSelector.append('<option value="' + firstOption.val() + '">' + firstOption.text() + '</option>');
+
+            if (courseId > 1) {
+                CalendarViewManager.reloadGroupSelector(courseId)
+                    .done(function(data) {
+                        if (data.length === 0) {
+                            $('#coursegroupslabel').hide();
+                            groupSelector.hide();
+                            courseSelector.addClass('mr-auto');
+                        } else {
+                            $('#coursegroupslabel').show();
+                            groupSelector.show();
+                            courseSelector.removeClass('mr-auto');
+
+                            $.each(data, function(index, value) {
+                                $("<option/>", {
+                                    value: value.id,
+                                    text: value.name.length > 15 ? value.name.substring(0, 14) + '...' : value.name
+                                }).appendTo(groupSelector);
+                            });
+                        }
+                    });
+            } else {
+                groupSelector.hide();
+                courseSelector.addClass('mr-auto');
+            }
+
             CalendarViewManager.reloadCurrentMonth(root, courseId, null)
                 .then(function() {
-                    // We need to get the selector again because the content has changed.
+                    // We need to get the course selector again because the content has changed.
                     return root.find(CalendarSelectors.elements.courseSelector).val(courseId);
                 })
                 .fail(Notification.exception);
+        });
+
+        root.on('change', CalendarSelectors.elements.groupSelector, function() {
+            var groupId = parseInt($(this).val());
+            var groupEvents = root.find(CalendarSelectors.eventType.group);
+
+            $.each(groupEvents.children(), function (index, value) {
+                let eventElement = $(value);
+
+                if (groupId === 0 || eventElement.data('event-groupid') === groupId) {
+                    eventElement.parent('li').show();
+                } else {
+                    eventElement.parent('li').hide();
+                }
+            });
         });
 
         var eventFormPromise = CalendarCrud.registerEventFormModal(root),
@@ -204,13 +254,13 @@ define([
 
         if (contextId) {
             // Bind click events to calendar days.
-            root.on('click', SELECTORS.DAY, function (e) {
+            root.on('click', SELECTORS.DAY, function(e) {
 
                 var target = $(e.target);
 
                 if (!target.is(SELECTORS.VIEW_DAY_LINK)) {
                     var startTime = $(this).attr('data-new-event-timestamp');
-                    eventFormPromise.then(function (modal) {
+                    eventFormPromise.then(function(modal) {
                         var wrapper = target.closest(CalendarSelectors.wrapper);
                         modal.setCourseId(wrapper.data('courseid'));
 
