@@ -70,6 +70,11 @@ class month_exporter extends exporter {
     protected $showcoursefilter = false;
 
     /**
+     * @var bool $showgroupfilter Whether to render the group filter selector as well.
+     */
+    protected $showgroupfilter = false;
+
+    /**
      * Constructor for month_exporter.
      *
      * @param \calendar_information $calendar The calendar being represented
@@ -123,7 +128,11 @@ class month_exporter extends exporter {
                 'optional' => true,
                 'default' => 0,
             ],
-            'filter_selector' => [
+            'course_filter_selector' => [
+                'type' => PARAM_RAW,
+                'optional' => true,
+            ],
+            'group_filter_selector' => [
                 'type' => PARAM_RAW,
                 'optional' => true,
             ],
@@ -230,7 +239,15 @@ class month_exporter extends exporter {
         ];
 
         if ($this->showcoursefilter) {
-            $return['filter_selector'] = $this->get_course_filter_selector($output);
+            $return['course_filter_selector'] = $this->get_course_filter_selector($output);
+        }
+
+        if ($this->showgroupfilter) {
+            $return['group_filter_selector'] = $this->get_group_filter_selector($output);
+
+            if (strpos($return['group_filter_selector'], 'display: none') === false) {
+                $return['course_filter_selector'] = str_replace('ml-1 mr-auto', 'ml-1', $return['course_filter_selector']);
+            }
         }
 
         if ($context = $this->get_default_add_context()) {
@@ -253,6 +270,19 @@ class month_exporter extends exporter {
     protected function get_course_filter_selector(renderer_base $output) {
         $content = '';
         $content .= $output->course_filter_selector($this->url, '', $this->calendar->course->id);
+
+        return $content;
+    }
+
+    /**
+     * Get the group filter selector.
+     *
+     * @param renderer_base $output
+     * @return string The html code for the course filter selector.
+     */
+    protected function get_group_filter_selector(renderer_base $output) {
+        $content = '';
+        $content .= $output->group_filter_selector($this->url, '', $this->calendar->course->id);
 
         return $content;
     }
@@ -421,6 +451,18 @@ class month_exporter extends exporter {
      */
     public function set_showcoursefilter(bool $show) {
         $this->showcoursefilter = $show;
+
+        return $this;
+    }
+
+    /**
+     * Set whether the group filter selector should be shown.
+     *
+     * @param   bool    $show
+     * @return  $this
+     */
+    public function set_showgroupfilter(bool $show) {
+        $this->showgroupfilter = $show;
 
         return $this;
     }

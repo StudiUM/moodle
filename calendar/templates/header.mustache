@@ -33,8 +33,11 @@
 }}
 <div class="header d-flex flex-wrap p-1">
     {{> core_calendar/view_selector}}
-    {{#filter_selector}}
-        {{{filter_selector}}}
-    {{/filter_selector}}
+    {{#course_filter_selector}}
+        {{{course_filter_selector}}}
+    {{/course_filter_selector}}
+    {{#group_filter_selector}}
+        {{{group_filter_selector}}}
+    {{/group_filter_selector}}
     {{> core_calendar/add_event_button}}
 </div>
