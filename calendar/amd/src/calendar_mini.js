@@ -26,12 +26,14 @@
  */
 define([
     'jquery',
+    'core/str',
     'core_calendar/selectors',
     'core_calendar/events',
     'core_calendar/view_manager',
 ],
 function(
     $,
+    Str,
     CalendarSelectors,
     CalendarEvents,
     CalendarViewManager
@@ -65,6 +67,7 @@ function(
 
         if (root.is(':visible')) {
             CalendarViewManager.reloadCurrentMonth(root);
+            root.find(CalendarSelectors.groupSelector).val(0);
         } else {
             // The root has been removed.
             // Remove all events in the namespace.
@@ -88,6 +91,37 @@ function(
                 var selectElement = $(this);
                 var courseId = selectElement.val();
                 var categoryId = null;
+                var courseSelector = root.find(CalendarSelectors.elements.courseSelector);
+
+                var groupSelector = root.find(CalendarSelectors.elements.groupSelector);
+                var firstOption = groupSelector.children().first();
+                groupSelector.empty();
+                groupSelector.append('<option value="' + firstOption.val() + '">' + firstOption.text() + '</option>');
+
+                if (courseId > 1) {
+                    CalendarViewManager.reloadGroupSelector(courseId)
+                        .done(function(data) {
+                            if (data.length === 0) {
+                                $('#coursegroupslabel').hide();
+                                groupSelector.hide();
+                                courseSelector.addClass('mr-auto');
+                            } else {
+                                $('#coursegroupslabel').show();
+                                groupSelector.show();
+                                courseSelector.removeClass('mr-auto');
+
+                                $.each(data, function(index, value) {
+                                    $("<option/>", {
+                                        value: value.id,
+                                        text: value.name.length > 15 ? value.name.substring(0, 14) + '...' : value.name
+                                    }).appendTo(groupSelector);
+                                });
+                            }
+                        });
+                } else {
+                    groupSelector.hide();
+                    courseSelector.addClass('mr-auto');
+                }
 
                 CalendarViewManager.reloadCurrentMonth(root, courseId, categoryId);
             } else {
@@ -95,12 +129,45 @@ function(
             }
         });
 
+        root.on('change', CalendarSelectors.elements.groupSelector, function() {
+            var groupId = parseInt($(this).val());
+            var groupEvents = root.find(CalendarSelectors.eventType.group);
+            var nogroupsElement = $('#nogroups');
+            var eventCount = 0;
+
+            if (nogroupsElement.length > 0) {
+                nogroupsElement.remove();
+            }
+
+            if (groupEvents.length > 0) {
+                $.each(groupEvents, function(index, value) {
+                    let eventElement = $(value);
+
+                    if (groupId === 0 || eventElement.data('event-groupid') === groupId) {
+                        eventElement.show();
+                        eventCount++;
+                    } else {
+                        eventElement.hide();
+                    }
+                });
+
+                if (eventCount === 0) {
+                    var eventlistElement = $(".eventlist");
+                    var nogroupeventsElement = $('<span id="nogroups" class="calendar-information calendar-no-results"></span>')
+                        .appendTo(eventlistElement);
+
+                    Str.get_string('nogroupevents', 'core_calendar')
+                        .done(function(data) {
+                            nogroupeventsElement.text(data);
+                        });
+                }
+            }
+        });
     };
 
     return {
         init: function(root, loadOnInit) {
             root = $(root);
-
             CalendarViewManager.init(root);
             registerEventListeners(root);
             registerCalendarEventListeners(root);
