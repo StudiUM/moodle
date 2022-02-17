@@ -187,6 +187,7 @@ $string['never'] = 'Never';
 $string['newevent'] = 'New event';
 $string['notitle'] = 'no title';
 $string['noupcomingevents'] = 'There are no upcoming events';
+$string['nogroupevents'] = 'There are no events to display for this group.';
 $string['nocalendarsubscriptions'] = 'You have no calendar subscriptions.';
 $string['oneevent'] = '1 event';
 $string['pollinterval'] = 'Update interval';

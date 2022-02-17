@@ -19,19 +19,26 @@ Feature: Perform basic calendar functionality
     And the following "course enrolments" exist:
       | user | course | role |
       | student1 | C1 | student |
-      | student3 | C1 | student |
+      | student2 | C1 | student |
+      | student2 | C2 | student |
+      | student3 | C2 | student |
       | teacher1 | C1 | teacher |
+      | teacher1 | C2 | teacher |
     And the following "groups" exist:
       | name | course | idnumber |
       | Group 1 | C1 | G1 |
+      | Group 2 | C1 | G2 |
     And the following "group members" exist:
       | user | group |
       | student1 | G1 |
+      | student2 | G2 |
       | teacher1 | G1 |
+      | teacher1 | G2 |
     And I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
     And I add the "Calendar" block
-    And I log out
+    And I am on "Course 1" course homepage
+    And I follow "This month"
 
   @javascript
   Scenario: Create a site event
@@ -40,14 +47,55 @@ Feature: Perform basic calendar functionality
       | Type of event | site |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
+    And I am on homepage
+    And I follow "Calendar"
+    Then I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
     And I log out
     And I log in as "student1"
+    And I am on homepage
+    And I follow "Calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
     And I am on "Course 1" course homepage
     And I follow "This month"
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
     And I should see "Really awesome event!"
     And I log out
     And I log in as "student2"
     And I follow "This month"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I am on "Course 1" course homepage
+    And I follow "This month"
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I follow "This month"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I am on "Course 2" course homepage
+    And I follow "Calendar"
+    And I should not see "List of groups"
+    And I should not see the group selector
     And I should see "Really awesome event!"
 
   @javascript
@@ -58,17 +106,61 @@ Feature: Perform basic calendar functionality
       | Course        | Course 1 |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event, sucka! |
-    And I log out
-    And I log in as "student1"
     When I am on "Course 1" course homepage
     And I follow "This month"
+    Then I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "This month"
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I choose "C1" from the course selector
     And I click on "Really awesome event!" "link"
     And "Course 1" "link" should exist in the "Really awesome event!" "dialogue"
     And I click on "Close" "button"
     And I log out
     And I log in as "student2"
     And I follow "This month"
-    Then I should not see "Really awesome event!"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should see "Really awesome event!"
+    And I am on "Course 1" course homepage
+    And I follow "This month"
+    And I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I follow "This month"
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
+    And I choose "C2" from the course selector
+    And I should not see "List of groups"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
 
   @javascript
   Scenario: Create a group event
@@ -79,11 +171,42 @@ Feature: Perform basic calendar functionality
       | Group         | Group 1 |
       | Event title | Really awesome event! |
       | Description | Come join this awesome event |
-    And I log out
-    And I log in as "student1"
     When I am on "Course 1" course homepage
     And I follow "This month"
-    Then I follow "Really awesome event!"
+    Then I should see "List of groups"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is available
+    And I choose "Group 2" from the group selector
+    And I should not see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "This month"
+    And I should see the group selector
+    And I should see that the option "Group 1" from the group selector is available
+    And I should see that the option "Group 2" from the group selector is not available
+    And I should see "Really awesome event!"
+    And I choose "Group 1" from the group selector
+    And I should see "Really awesome event!"
+    And I log out
+    And I log in as "student2"
+    And I am on "Course 1" course homepage
+    And I follow "This month"
+    And I should see the group selector
+    And I should see that the option "Group 2" from the group selector is available
+    And I should see that the option "Group 1" from the group selector is not available
+    And I should not see "Really awesome event!"
+    And I choose "Group 2" from the group selector
+    And I should not see "Really awesome event!"
+    And I log out
+    And I log in as "student3"
+    And I am on "Course 2" course homepage
+    And I follow "Calendar"
+    And I should not see the group selector
+    And I should not see "Really awesome event!"
 
   @javascript
   Scenario: Create a user event
