@@ -81,11 +81,10 @@ class contenttype extends \core_contentbank\contenttype {
      */
     public function get_icon(\core_contentbank\content $content): string {
         global $OUTPUT, $DB;
-
         $iconurl = $OUTPUT->image_url('f/h5p-64', 'moodle')->out(false);
         $file = $content->get_file();
         if (!empty($file)) {
-            $h5p = \core_h5p\api::get_content_from_pathnamehash($file->get_pathnamehash());
+            $h5p = \core_h5p\api::get_content_from_pathnamehash($file->get_pathnamehash(), 'mainlibraryid');
             if (!empty($h5p)) {
                 \core_h5p\local\library\autoloader::register();
                 if ($h5plib = $DB->get_record('h5p_libraries', ['id' => $h5p->mainlibraryid])) {

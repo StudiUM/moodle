@@ -56,7 +56,7 @@ class content extends \core_contentbank\content {
         // Check if the H5P entry has been created and if the main library is enabled.
         $file = $this->get_file();
         if (!empty($file)) {
-            $h5p = \core_h5p\api::get_content_from_pathnamehash($file->get_pathnamehash());
+            $h5p = \core_h5p\api::get_content_from_pathnamehash($file->get_pathnamehash(), 'mainlibraryid');
             if (empty($h5p)) {
                 // If there is no H5P entry for this content, it won't be displayed unless the user has the manageanycontent
                 // capability. Reasons for contents without a proper H5P entry in DB:

@@ -334,12 +334,17 @@ class contentbank {
      * Return a content class form a content id.
      *
      * @throws coding_exception if the ID is not valid or some class does no exists
-     * @param int $id the content id
+     * @param int|stdClass $objectorid the object content or the id content
      * @return content the content class instance
      */
-    public function get_content_from_id(int $id): content {
+    public function get_content_from_id($objectorid): content {
         global $DB;
-        $record = $DB->get_record('contentbank_content', ['id' => $id], '*', MUST_EXIST);
+        if (is_object($objectorid)) {
+            $record = $objectorid;
+        } else {
+            $record = $DB->get_record('contentbank_content', ['id' => $objectorid], '*', MUST_EXIST);
+        }
+
         $contentclass = "\\$record->contenttype\\content";
         return new $contentclass($record);
     }
