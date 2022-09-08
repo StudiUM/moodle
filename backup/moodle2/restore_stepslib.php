@@ -1046,15 +1046,19 @@ class restore_load_included_files extends restore_structure_step {
 
         $data = (object)$data; // handy
 
-        // load it if needed:
-        //   - it it is one of the annotated inforef files (course/section/activity/block)
-        //   - it is one "user", "group", "grouping", "grade", "question" or "qtype_xxxx" component file (that aren't sent to inforef ever)
+        /*
+         * Load it if needed:
+         *  - it it is one of the annotated inforef files (course/section/activity/block)
+         *  - it is one "user", "group", "grouping", "grade", "question", "contentbank" or "qtype_xxxx" component file
+         *      (that aren't sent to inforef ever)
+         */
         // TODO: qtype_xxx should be replaced by proper backup_qtype_plugin::get_components_and_fileareas() use,
         //       but then we'll need to change it to load plugins itself (because this is executed too early in restore)
         $isfileref   = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'fileref', $data->id);
         $iscomponent = ($data->component == 'user' || $data->component == 'group' || $data->component == 'badges' ||
                         $data->component == 'grouping' || $data->component == 'grade' ||
-                        $data->component == 'question' || substr($data->component, 0, 5) == 'qtype');
+                        $data->component == 'question' || substr($data->component, 0, 5) == 'qtype' ||
+                        $data->component == 'contentbank');
         if ($isfileref || $iscomponent) {
             restore_dbops::set_backup_files_record($this->get_restoreid(), $data);
         }
