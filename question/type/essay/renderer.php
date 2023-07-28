@@ -467,7 +467,9 @@ class qtype_essay_format_editorfilepicker_renderer extends qtype_essay_format_ed
      * @return array options for the editor.
      */
     protected function get_editor_options($context) {
-        return question_utils::get_editor_options($context);
+        $options = question_utils::get_editor_options($context);
+        $options['return_types'] = FILE_INTERNAL | FILE_EXTERNAL;
+        return $options;
     }
 
     /**
