@@ -178,6 +178,9 @@ abstract class qtype_gapselect_question_base extends question_graded_automatical
     }
 
     public function get_random_guess_score() {
+        if (empty($this->places)) {
+            return null;
+        }
         $accum = 0;
 
         foreach ($this->places as $placegroup) {
