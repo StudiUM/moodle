@@ -106,6 +106,10 @@ class calculator {
 
                         if ($p > 1) {
                             $quizstats->cic = (100 * $p / ($p - 1)) * (1 - ($sumofmarkvariance / $k2));
+                            // Set cic's value to null if out of range.
+                            if ($quizstats->cic <= -100000 || $quizstats->cic >= 100000) {
+                                $quizstats->cic = null;
+                            }
                             $quizstats->errorratio = 100 * sqrt(1 - ($quizstats->cic / 100));
                             $quizstats->standarderror = $quizstats->errorratio *
                                 $quizstats->standarddeviation / 100;
