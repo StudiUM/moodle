@@ -52,7 +52,7 @@
     {{$body}}
         <form class="mform" id="{{uniqid}}">
             {{> tiny_equation/modal_library }}
-            <label for="{{elementid}}_tiny_equation_equation">{{#str}} editequation, tiny_equation, {{texdocsurl}} {{/str}}</label>
+            <label for="{{elementid}}_tiny_equation_equation">{{#texdocsurl}}{{#str}} editequation, tiny_equation, {{texdocsurl}} {{/str}}{{/texdocsurl}}</label>
             <textarea class="fullwidth text-ltr tiny_equation_equation w-100" id="{{elementid}}_tiny_equation_equation" rows="8">{{equation}}</textarea>
             <label for="{{elementid}}_tiny_equation_preview">{{#str}} preview, tiny_equation {{/str}}</label>
             <div aria-describedby="{{elementid}}_cursorinfo" class="border rounded bg-light p-1 fullwidth tiny_equation_preview" id="{{elementid}}__tiny_equation_preview"></div>

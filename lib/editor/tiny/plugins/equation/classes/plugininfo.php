@@ -96,7 +96,20 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
             'texfilter' => $texfilteractive,
             'contextid' => $context->id,
             'libraries' => $libraries,
-            'texdocsurl' => get_docs_url('Using_TeX_Notation'),
+            'texdocsurl' => self::has_to_display_texdocsurl() ? get_docs_url('Using_TeX_Notation') : null,
         ];
+    }
+
+    /**
+     * Verify if we can display the text of docs url for current Equation editor.
+     * @return bool
+     */
+    public static function has_to_display_texdocsurl(): bool {
+        global $PAGE;
+        if ($PAGE->pagelayout == 'secure') {
+            // Do not try to show the text of docs url in secure mode.
+            return false;
+        }
+        return true;
     }
 }
