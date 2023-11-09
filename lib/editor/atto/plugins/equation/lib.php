@@ -86,5 +86,19 @@ function atto_equation_params_for_js($elementid, $options, $fpoptions) {
     return array('texfilteractive' => $texfilteractive,
                  'contextid' => $context->id,
                  'library' => $library,
-                 'texdocsurl' => get_docs_url('Using_TeX_Notation'));
+                 'texdocsurl' => has_to_display_texdocsurl() ? get_docs_url('Using_TeX_Notation') : null,
+        );
+}
+
+/**
+ * Verify if we can display the text containing docs url for current Equation editor.
+ * @return bool
+ */
+function has_to_display_texdocsurl(): bool {
+    global $PAGE;
+    if ($PAGE->pagelayout == 'secure') {
+        // Do not try to show the text containing docs url in secure mode.
+        return false;
+    }
+    return true;
 }
