@@ -363,8 +363,13 @@ class message_airnotifier_manager {
         }
 
         // Check user devices from last month.
-        $recentdevicescount = $DB->count_records_select('user_devices', 'appid = ? AND timemodified > ?',
-            [$CFG->airnotifiermobileappname, time() - (WEEKSECS * 4)]);
+        $airnotifiermobileappnames = explode(',', $CFG->airnotifiermobileappname);
+        [$insql, $inparams] = $DB->get_in_or_equal($airnotifiermobileappnames);
+        $recentdevicescount = $DB->count_records_select(
+            'user_devices',
+            "appid $insql AND timemodified > ?",
+            [...$inparams, time() - (WEEKSECS * 4)]
+        );
 
         $summary = get_string('userdevices', 'message_airnotifier');
         if (!empty($recentdevicescount)) {
