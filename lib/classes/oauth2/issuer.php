@@ -266,6 +266,24 @@ class issuer extends persistent {
      * @return string
      */
     public function get_display_name(): string {
-        return $this->get('loginpagename') ? $this->get('loginpagename') : $this->get('name');
+        $loginpagename = null;
+        if ($this->get('loginpagename')) {
+            $loginpagenames = explode("\n", trim($this->get('loginpagename')));
+            // Set the default value!
+            $loginpagename = array_shift($loginpagenames);
+            // In case there is more than the default value!
+            if ($loginpagenames) {
+                foreach ($loginpagenames as $name) {
+                    $nameandlang = explode("|", $name);
+                    $languages = explode(",", array_pop($nameandlang));
+                    $languages = array_map(fn ($lang) => strtolower($lang), $languages);
+                    if (in_array(current_language(), $languages)) {
+                        $loginpagename = implode("|", $nameandlang);
+                        break;
+                    }
+                }
+            }
+        }
+        return $loginpagename ? $loginpagename : $this->get('name');
     }
 }

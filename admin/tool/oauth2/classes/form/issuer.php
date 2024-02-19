@@ -134,7 +134,7 @@ class issuer extends persistent {
         $mform->addHelpButton('showonloginpage', 'issuerusein', 'tool_oauth2');
 
         // Name on login page.
-        $mform->addElement('text', 'loginpagename', get_string('issuerloginpagename', 'tool_oauth2'));
+        $mform->addElement('textarea', 'loginpagename', get_string('issuerloginpagename', 'tool_oauth2'), ['rows' => 5]);
         $mform->addRule('loginpagename', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->addHelpButton('loginpagename', 'issuerloginpagename', 'tool_oauth2');
         $mform->hideIf('loginpagename', 'showonloginpage', 'eq', \core\oauth2\issuer::SERVICEONLY);

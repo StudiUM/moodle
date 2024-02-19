@@ -73,7 +73,17 @@ $string['issuerenabled'] = 'Identity issuer enabled';
 $string['issuerimage_help'] = 'An image URL used to show a logo for this issuer. May be displayed on login page.';
 $string['issuerimage'] = 'Logo URL';
 $string['issuerloginpagename'] = 'Name displayed on the login page';
-$string['issuerloginpagename_help'] = 'If specified, this name will be used on the login page instead of the service name.';
+$string['issuerloginpagename_help'] = "If specified, this name will be used on the login page instead of the service name.\n
+Different languages can be processed by using a pipe (|) after the text. A new line must be created for each text. 
+The first line is the default one, lang should not be declared.
+It is always possible to use a pipe within the text, only the last pipe (|) is taken into account for the lang.
+It is also possible to declare multiple languages for the same text by using a comma.\n
+<pre>
+Default text
+Text in French|fr,fr_ca
+Text in Spanish|es
+With | pipe|nl
+</pre>";
 $string['issuerloginparams'] = 'Additional parameters included in a login request.';
 $string['issuerloginparams_help'] = 'Some systems require additional parameters for a login request in order to read the user\'s basic profile.';
 $string['issuerloginparamsoffline'] = 'Additional parameters included in a login request for offline access.';
