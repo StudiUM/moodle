@@ -175,6 +175,10 @@ class login implements renderable, templatable {
         $data->maintenance = format_text($this->maintenance, FORMAT_MOODLE);
         $data->languagemenu = $this->languagemenu;
         $data->recaptcha = $this->recaptcha;
+        $data->showloginform = 0;
+        if (get_config('core', 'showloginform') === false || get_config('core', 'showloginform') == 1) {
+            $data->showloginform = 1;
+        }
 
         return $data;
     }
