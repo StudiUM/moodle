@@ -129,6 +129,19 @@ class helper {
                 'value' => join('<br />', $roledetails)
             );
         }
+
+        $coursecontacts = array();
+        foreach ($course->get_course_contacts() as $contact) {
+            $contacturl = new \moodle_url('/user/view.php', array('id' => $contact['user']->id));
+            $coursecontact = \html_writer::link($contacturl, $contact['username']);
+            $coursecontacts[] = $coursecontact;
+        }
+        if ($canaccess && (count($coursecontacts) > 0)) {
+            $details['teachers'] = array(
+                'key' => \get_string('teachers'),
+                'value' => join('<br />', $coursecontacts)
+            );
+        }
         if ($course->can_review_enrolments()) {
             $enrolmentlines = array();
             $instances = \enrol_get_instances($course->id, true);
