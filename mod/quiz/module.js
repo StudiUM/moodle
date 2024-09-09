@@ -364,6 +364,15 @@ M.mod_quiz.secure_window = {
         Y.on('key', M.mod_quiz.secure_window.prevent, '*', 'press:67,86,88+meta');
         Y.on('key', M.mod_quiz.secure_window.prevent, '*', 'up:67,86,88+meta');
         Y.on('key', M.mod_quiz.secure_window.prevent, '*', 'down:67,86,88+meta');
+        Y.delegate('click', function(e) {
+            var target = e.target;
+            if (target.get('tagName') === 'A' && target.get('href')) {
+                var linkHostname = new URL(target.get('href')).hostname;
+                if (linkHostname !== window.location.hostname) {
+                    e.preventDefault();
+                }
+            }
+        }, document, 'a');
     },
 
     is_content_editable: function(n) {
