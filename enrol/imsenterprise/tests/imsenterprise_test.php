@@ -104,6 +104,10 @@ final class imsenterprise_test extends \advanced_testcase {
         $this->imsplugin->cron();
 
         $this->assertEquals(($prevnusers + 1), $DB->count_records('user'));
+
+        $dbuser = $DB->get_record('user', ['username' => $user1->username]);
+        $this->assertNotEquals(0, $dbuser->timecreated);
+        $this->assertEquals($dbuser->timemodified, $dbuser->timecreated);
     }
 
     /**
