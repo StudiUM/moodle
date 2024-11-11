@@ -451,6 +451,8 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
     protected function process_person_tag($tagcontents) {
         global $CFG, $DB;
 
+        require_once($CFG->dirroot."/user/lib.php");
+
         // Get plugin configs.
         $imssourcedidfallback   = $this->get_config('imssourcedidfallback');
         $fixcaseusernames       = $this->get_config('fixcaseusernames');
@@ -579,7 +581,9 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
                     }
                     $person->confirmed = 1;
                     $person->timemodified = time();
+                    $person->timecreated = $person->timemodified;
                     $person->mnethostid = $CFG->mnet_localhost_id;
+                    //$id = user_create_user($person, false, true);
                     $id = $DB->insert_record('user', $person);
                     $this->log_line("Created user record ('.$id.') for user '$person->username' (ID number $person->idnumber).");
                 }
