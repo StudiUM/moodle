@@ -33,4 +33,11 @@ $functions = [
         'type' => 'read',
         'ajax' => true,
     ],
+    'quizaccess_seb_quit_seb' => [
+        'classname' => 'quizaccess_seb\external\quit_seb',
+        'methodname' => 'execute',
+        'description' => 'Log event when user click on button Exit SEB',
+        'type' => 'read',
+        'ajax' => true,
+    ],
 ];
