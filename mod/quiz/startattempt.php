@@ -103,6 +103,10 @@ if ($currentattemptid) {
     if ($lastattempt->state == quiz_attempt::OVERDUE) {
         redirect($quizobj->summary_url($lastattempt->id));
     } else {
+        // Log continue attempt quiz event.
+        $attemptobj = quiz_create_attempt_handling_errors($currentattemptid, $cm->id);
+        $attemptobj->fire_attempt_continue_event();
+        // Redirect to the attempt page.
         redirect($quizobj->attempt_url($currentattemptid, $page));
     }
 }
