@@ -416,7 +416,7 @@ class quizaccess_seb extends access_rule_base {
             $quitbutton = html_writer::link(
                 $this->quiz->seb_linkquitseb,
                 get_string('exitsebbutton', 'quizaccess_seb'),
-                ['class' => 'btn btn-secondary']
+                ['class' => 'btn btn-secondary exitsebbutton']
             );
         }
 
@@ -432,7 +432,7 @@ class quizaccess_seb extends access_rule_base {
      *         (may be '' if no message is appropriate).
      */
     public function description(): array {
-        global $PAGE;
+        global $PAGE, $USER;
 
         $messages = [get_string('sebrequired', 'quizaccess_seb')];
 
@@ -444,6 +444,8 @@ class quizaccess_seb extends access_rule_base {
         // Those with higher level access will be able to see the button if they've made an attempt.
         if (!$this->prevent_access()) {
             $messages[] = $this->display_buttons($this->get_quit_button());
+            $PAGE->requires->js_call_amd('quizaccess_seb/logsebevent', 'init',
+                [$this->quiz->cmid, $USER->id]);
         } else {
             $PAGE->requires->js_call_amd('quizaccess_seb/validate_quiz_access', 'init',
                 [$this->quiz->cmid, (bool)get_config('quizaccess_seb', 'autoreconfigureseb')]);
