@@ -247,13 +247,11 @@ abstract class qtype_gapselect_question_base extends question_graded_automatical
     public function get_ordered_choices($group) {
         $choices = array();
         foreach ($this->choiceorder[$group] as $choicekey => $choiceid) {
-            $choices[$choicekey] = isset($this->choices[$group][$choiceid]) ?
-                    $this->choices[$group][$choiceid] :
-                    (object) [
-                        'id'       => false,
-                        'text'     => get_string('deletedchoice', 'qtype_ddimageortext'),
-                        'infinite' => false
-                    ];
+            $choices[$choicekey] = $this->choices[$group][$choiceid] ?? (object)[
+                'id' => false,
+                'text' => get_string('deletedchoice', 'qtype_ddimageortext'),
+                'infinite' => false,
+            ];
         }
         return $choices;
     }
