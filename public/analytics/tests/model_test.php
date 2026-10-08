@@ -316,13 +316,22 @@ final class model_test extends \advanced_testcase {
         // (course->sortorder here). We can not check this nicely after next get_unlabelled_data round
         // because the first analysed element will be analysed again.
         $analysedelems = $DB->get_records('analytics_used_analysables', $params, 'timeanalysed ASC');
-        // Just a default for the first checked element.
-        $last = (object)['sortorder' => PHP_INT_MAX];
+
+        // Because timeanalysed is not unique, group them and compare the groups.
+        $groups = [];
         foreach ($analysedelems as $analysed) {
-            if ($courses[$analysed->analysableid]->sortorder > $last->sortorder) {
-                $this->fail('Analysable elements have not been analysed sorted by course sortorder.');
+            $groups[$analysed->timeanalysed][] = (int) $courses[$analysed->analysableid]->sortorder;
+        }
+        $previousmax = null;
+        foreach ($groups as $sortorders) {
+            if ($previousmax !== null) {
+                $this->assertLessThanOrEqual(
+                    min($sortorders),
+                    $previousmax,
+                    'Analysable elements have not been analysed sorted by course sortorder.'
+                );
             }
-            $last = $courses[$analysed->analysableid];
+            $previousmax = max($sortorders);
         }
 
         // No time limit now to process the rest.

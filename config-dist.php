@@ -756,7 +756,6 @@ $CFG->admin = 'admin';
 // which is the same as the course in category B
 // The duplicate will cause sorting issue and hence we need to increase $CFG->maxcoursesincategory
 // to fix the duplicate sort order
-// Please also make sure $CFG->maxcoursesincategory * MAX_COURSE_CATEGORIES less than max integer.
 //
 // $CFG->maxcoursesincategory = 10000;
 //

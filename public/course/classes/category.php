@@ -508,6 +508,7 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
             $newcategory->visibleold = 1;
         }
 
+        // A new category is not placed in the tree yet.
         $newcategory->sortorder = 0;
         $newcategory->timemodified = time();
 
@@ -2349,9 +2350,8 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
 
         $context->update_moved($newparent);
 
-        // Now make it last in new category.
-        $DB->set_field('course_categories', 'sortorder',
-            get_max_courses_in_category() * MAX_COURSE_CATEGORIES, ['id' => $this->id]);
+        // Now make it last in new category. The sortorder is set by fix_course_sortorder().
+        $DB->set_field('course_categories', 'sortorder', 0, ['id' => $this->id]);
 
         if ($hidecat) {
             fix_course_sortorder();
@@ -2966,11 +2966,12 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
         if (!empty($desc)) {
             $children = array_reverse($children);
         }
-        $i = 1;
+        // Distance between two adjacent categories.
+        $step = get_max_courses_in_category();
+        $sortorder = $this->sortorder;
         foreach ($children as $cat) {
-            $i++;
-            $DB->set_field('course_categories', 'sortorder', $i, array('id' => $cat->id));
-            $i += $cat->coursecount;
+            $sortorder += $step;
+            $DB->set_field('course_categories', 'sortorder', $sortorder, ['id' => $cat->id]);
         }
         if ($cleanup) {
             self::resort_categories_cleanup();
@@ -3047,10 +3048,14 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
             if (!empty($desc)) {
                 $courses = array_reverse($courses);
             }
-            $i = 1;
+            // Like fix_course_sortorder(), place courses at the top of the category's range.
+            $sortorder = max(
+                $this->sortorder + 1,
+                $this->sortorder + get_max_courses_in_category() - count($courses)
+            );
             foreach ($courses as $course) {
-                $DB->set_field('course', 'sortorder', $this->sortorder + $i, array('id' => $course->id));
-                $i++;
+                $DB->set_field('course', 'sortorder', $sortorder, ['id' => $course->id]);
+                $sortorder++;
             }
             if ($cleanup) {
                 // This should not be needed but we do it just to be safe.

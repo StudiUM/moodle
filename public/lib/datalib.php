@@ -29,14 +29,17 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * The maximum courses in a category
- * MAX_COURSES_IN_CATEGORY * MAX_COURSE_CATEGORIES must not be more than max integer!
+ * The maximum number of courses in a category, overridden by $CFG->maxcoursesincategory.
+ *
+ * @deprecated since Moodle 6.0, use {@see get_max_courses_in_category()} instead.
  */
 define('MAX_COURSES_IN_CATEGORY', 10000);
 
 /**
   * The maximum number of course categories
-  * MAX_COURSES_IN_CATEGORY * MAX_COURSE_CATEGORIES must not be more than max integer!
+  *
+  * @deprecated since Moodle 6.0, nothing derives the sortorder of a category from this value
+  * any more, see {@see fix_course_sortorder()}.
   */
 define('MAX_COURSE_CATEGORIES', 10000);
 
@@ -822,39 +825,92 @@ function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$total
 }
 
 /**
+ * Returns free course sortorder values in the given category, in ascending order.
+ *
+ * The courses are kept stacked against the top of that range, which keeps the space in front of
+ * them free, so a new course goes there without shifting anything. Once that space runs out the
+ * course is appended instead and {@see fix_course_sortorder()} repairs any duplicate it causes.
+ *
+ * @param int $categoryid the id of the category
+ * @param int $count the number of the sortorder values to return
+ * @return int[]
+ */
+function get_free_course_sortorders($categoryid, $count = 1) {
+    global $DB;
+
+    $catsortorder = (int) $DB->get_field('course_categories', 'sortorder', ['id' => $categoryid], MUST_EXIST);
+    $sortorderlimit = $catsortorder + get_max_courses_in_category();
+
+    $sql = 'SELECT MIN(sortorder) AS minsortorder, MAX(sortorder) AS maxsortorder
+              FROM {course}
+             WHERE category = ?';
+    $bounds = $DB->get_record_sql($sql, [$categoryid]);
+    $minsortorder = (int) $bounds->minsortorder;
+
+    // Courses with a broken sortorder do not eat up the free space.
+    $maxsortorder = min((int) $bounds->maxsortorder, $sortorderlimit);
+
+    if ($minsortorder <= $catsortorder) {
+        // No courses yet, or all of them are broken, so start at the top of the range.
+        $firstfree = $sortorderlimit - $count;
+    } else if ($minsortorder - $count >= $catsortorder + 1) {
+        // There is enough free space in front of the first course of the category.
+        $firstfree = $minsortorder - $count;
+    } else {
+        // Behind the last course, fix_course_sortorder() sorts out the duplicates if there is
+        // not enough free space there either.
+        $firstfree = $maxsortorder + 1;
+    }
+
+    return range($firstfree, $firstfree + $count - 1);
+}
+
+/**
  * Fixes course category and course sortorder, also verifies category and course parents and paths.
  * (circular references are not fixed)
  *
- * @global object
- * @global object
- * @uses MAX_COURSE_CATEGORIES
+ * Puts the categories in depth first order and the courses of each of them inside its range.
+ *
+ * The sortorders are never compacted, so only the broken records are written: the categories that
+ * are too close to their predecessor, and the courses that are out of the range of their category
+ * or share their sortorder with another course. Gaps are always valid.
+ *
  * @uses SITEID
- * @uses CONTEXT_COURSE
  * @return void
  */
 function fix_course_sortorder() {
-    global $DB, $SITE;
+    global $DB;
 
-    //WARNING: this is PHP5 only code!
+    // If there are any changes made to courses or categories we will trigger
+    // the cache events to purge all cached courses/categories data.
+    $cacheevents = [];
 
-    // if there are any changes made to courses or categories we will trigger
-    // the cache events to purge all cached courses/categories data
-    $cacheevents = array();
+    // Minimal distance between two adjacent categories.
+    $sortorderstep = get_max_courses_in_category();
 
-    if ($unsorted = $DB->get_records('course_categories', array('sortorder'=>0))) {
-        //move all categories that are not sorted yet to the end
-        $DB->set_field('course_categories', 'sortorder',
-            get_max_courses_in_category() * MAX_COURSE_CATEGORIES, array('sortorder' => 0));
-        $cacheevents['changesincoursecat'] = true;
+    // All the categories, the records are reused for the course verification.
+    $allcats = $DB->get_records(
+        'course_categories',
+        null,
+        'sortorder, id',
+        'id, sortorder, parent, depth, path, coursecount'
+    );
+
+    // The unplaced categories belong behind every placed one, with room to increment.
+    $unplacedsortorder = 1;
+    foreach ($allcats as $cat) {
+        $unplacedsortorder = max($unplacedsortorder, (int) $cat->sortorder + 1);
     }
 
-    $allcats = $DB->get_records('course_categories', null, 'sortorder, id', 'id, sortorder, parent, depth, path');
-    $topcats    = array();
-    $brokencats = array();
+    $topcats    = [];
+    $brokencats = [];
     foreach ($allcats as $cat) {
-        $sortorder = (int)$cat->sortorder;
+        $sortorder = (int) $cat->sortorder;
+        if (empty($sortorder)) {
+            $sortorder = $unplacedsortorder;
+        }
         if (!$cat->parent) {
-            while(isset($topcats[$sortorder])) {
+            while (isset($topcats[$sortorder])) {
                 $sortorder++;
             }
             $topcats[$sortorder] = $cat;
@@ -865,32 +921,69 @@ function fix_course_sortorder() {
             continue;
         }
         if (!isset($allcats[$cat->parent]->children)) {
-            $allcats[$cat->parent]->children = array();
+            $allcats[$cat->parent]->children = [];
         }
-        while(isset($allcats[$cat->parent]->children[$sortorder])) {
+        while (isset($allcats[$cat->parent]->children[$sortorder])) {
             $sortorder++;
         }
         $allcats[$cat->parent]->children[$sortorder] = $cat;
     }
-    unset($allcats);
 
-    // add broken cats to category tree
+    // Add broken cats to category tree, they are visited after the categories that keep their place.
     if ($brokencats) {
-        $defaultcat = reset($topcats);
         foreach ($brokencats as $cat) {
-            $topcats[] = $cat;
+            $sortorder = (int) $cat->sortorder;
+            if (empty($sortorder)) {
+                $sortorder = $unplacedsortorder;
+            }
+            while (isset($topcats[$sortorder])) {
+                $sortorder++;
+            }
+            $topcats[$sortorder] = $cat;
+        }
+        $brokencats = [];
+    }
+
+    // The children are keyed by the sortorder, but the unplaced ones were fetched first.
+    ksort($topcats);
+    foreach ($allcats as $cat) {
+        if (isset($cat->children)) {
+            ksort($cat->children);
         }
     }
 
-    // now walk recursively the tree and fix any problems found
-    $sortorder = 0;
-    $fixcontexts = array();
-    if (_fix_course_cats($topcats, $sortorder, 0, 0, '', $fixcontexts)) {
+    // Walk the tree and find out what has to change.
+    $fixcontexts = [];
+    $changecats = _fix_course_cats($topcats, $fixcontexts);
+    if ($changecats) {
         $cacheevents['changesincoursecat'] = true;
+        foreach ($changecats as $changecat) {
+            $cat = $changecat['category'];
+            $DB->update_record('course_categories', $cat, true);
+            if (!empty($changecat['delta'])) {
+                // The courses follow their category, the broken ones stay where they are.
+                $oldsortorder = $cat->sortorder - $changecat['delta'];
+                $DB->execute(
+                    'UPDATE {course}
+                                 SET sortorder = sortorder + :delta
+                               WHERE category = :category
+                                 AND sortorder > :minsortorder
+                                 AND sortorder <= :maxsortorder',
+                    [
+                        'delta' => $changecat['delta'],
+                        'category' => $cat->id,
+                        'minsortorder' => $oldsortorder,
+                        'maxsortorder' => $oldsortorder + $sortorderstep,
+                    ]
+                );
+                $cacheevents['changesincourse'] = true;
+            }
+        }
+        unset($changecats);
     }
 
-    // detect if there are "multiple" frontpage courses and fix them if needed
-    $frontcourses = $DB->get_records('course', array('category'=>0), 'id');
+    // Detect if there are "multiple" frontpage courses and fix them if needed.
+    $frontcourses = $DB->get_records('course', ['category' => 0], 'id', 'id, sortorder');
     if (count($frontcourses) > 1) {
         if (isset($frontcourses[SITEID])) {
             $frontcourse = $frontcourses[SITEID];
@@ -900,7 +993,7 @@ function fix_course_sortorder() {
         }
         $defaultcat = reset($topcats);
         foreach ($frontcourses as $course) {
-            $DB->set_field('course', 'category', $defaultcat->id, array('id'=>$course->id));
+            $DB->set_field('course', 'category', $defaultcat->id, ['id' => $course->id]);
             $context = context_course::instance($course->id);
             $fixcontexts[$context->id] = $context;
             $cacheevents['changesincourse'] = true;
@@ -910,7 +1003,7 @@ function fix_course_sortorder() {
         $frontcourse = reset($frontcourses);
     }
 
-    // now fix the paths and depths in context table if needed
+    // Now fix the paths and depths in context table if needed.
     if ($fixcontexts) {
         foreach ($fixcontexts as $fixcontext) {
             $fixcontext->reset_paths(false);
@@ -921,167 +1014,235 @@ function fix_course_sortorder() {
         $cacheevents['changesincoursecat'] = true;
     }
 
-    // release memory
+    // Release memory.
     unset($topcats);
-    unset($brokencats);
     unset($fixcontexts);
 
-    // fix frontpage course sortorder
-    if ($frontcourse->sortorder != 1) {
-        $DB->set_field('course', 'sortorder', 1, array('id'=>$frontcourse->id));
+    // Fix frontpage course sortorder.
+    if ($frontcourse && (int) $frontcourse->sortorder != 1) {
+        $DB->set_field('course', 'sortorder', 1, ['id' => $frontcourse->id]);
         $cacheevents['changesincourse'] = true;
     }
 
-    // now fix the course counts in category records if needed
-    $sql = "SELECT cc.id, cc.coursecount, COUNT(c.id) AS newcount
-              FROM {course_categories} cc
-              LEFT JOIN {course} c ON c.category = cc.id
-          GROUP BY cc.id, cc.coursecount
-            HAVING cc.coursecount <> COUNT(c.id)";
+    // One aggregated query for all the courses: the count, the duplicates and the range per category.
+    $sql = "SELECT category,
+                   COUNT(*) AS coursecount,
+                   COUNT(DISTINCT sortorder) AS distinctcount,
+                   MIN(sortorder) AS minsortorder,
+                   MAX(sortorder) AS maxsortorder
+              FROM {course}
+          GROUP BY category";
+    $categorycourses = $DB->get_records_sql($sql);
 
-    if ($updatecounts = $DB->get_records_sql($sql)) {
-        // categories with more courses than MAX_COURSES_IN_CATEGORY
-        $categories = array();
-        foreach ($updatecounts as $cat) {
-            $cat->coursecount = $cat->newcount;
-            if ($cat->coursecount >= get_max_courses_in_category()) {
-                $categories[] = $cat->id;
+    // Categories holding more courses than they have room for.
+    $fullcategories = [];
+
+    // Categories which contain a course with a duplicated or out of range sortorder.
+    $fixcategories = [];
+
+    foreach ($allcats as $cat) {
+        $catsortorder = (int) $cat->sortorder;
+        if (empty($categorycourses[$cat->id])) {
+            $coursecount = 0;
+            $distinctcount = 0;
+        } else {
+            $summary = $categorycourses[$cat->id];
+            $coursecount = (int) $summary->coursecount;
+            $distinctcount = (int) $summary->distinctcount;
+        }
+
+        // Now fix the course counts in category records if needed.
+        if ((int) $cat->coursecount !== $coursecount) {
+            $DB->set_field('course_categories', 'coursecount', $coursecount, ['id' => $cat->id]);
+            $cacheevents['changesincoursecat'] = true;
+            if ($coursecount >= $sortorderstep) {
+                $fullcategories[] = $cat->id;
             }
-            unset($cat->newcount);
-            $DB->update_record_raw('course_categories', $cat, true);
         }
-        if (!empty($categories)) {
-            $str = implode(', ', $categories);
-            debugging("The number of courses (category id: $str) has reached max number of courses " .
-                "in a category (" . get_max_courses_in_category() . "). It will cause a sorting performance issue. " .
-                "Please set higher value for \$CFG->maxcoursesincategory in config.php. " .
-                "Please also make sure \$CFG->maxcoursesincategory * MAX_COURSE_CATEGORIES less than max integer. " .
-                "See tracker issues: MDL-25669 and MDL-69573", DEBUG_DEVELOPER);
+
+        // Now make sure that sortorders in course table are within the category sortorder ranges
+        // and are not shared by two courses of the same category.
+        if (
+            $coursecount && (
+                $distinctcount !== $coursecount
+                || (int) $summary->minsortorder <= $catsortorder
+                || (int) $summary->maxsortorder > $catsortorder + $sortorderstep
+            )
+        ) {
+            $fixcategories[$cat->id] = $catsortorder;
         }
-        $cacheevents['changesincoursecat'] = true;
+    }
+    unset($allcats);
+
+    if (!empty($fullcategories)) {
+        $str = implode(', ', $fullcategories);
+        debugging("The number of courses (category id: $str) has reached max number of courses " .
+            "in a category (" . $sortorderstep . "). It will cause a sorting performance issue. " .
+            "Please set higher value for \$CFG->maxcoursesincategory in config.php. " .
+            "See tracker issues: MDL-25669 and MDL-69573", DEBUG_DEVELOPER);
     }
 
-    // now make sure that sortorders in course table are withing the category sortorder ranges
-    $sql = "SELECT DISTINCT cc.id, cc.sortorder
-              FROM {course_categories} cc
-              JOIN {course} c ON c.category = cc.id
-             WHERE c.sortorder < cc.sortorder OR c.sortorder > cc.sortorder + " . get_max_courses_in_category();
+    // Fix the course sortorders in the problematic categories only.
+    foreach ($fixcategories as $categoryid => $catsortorder) {
+        $courses = $DB->get_records('course', ['category' => $categoryid], 'sortorder ASC, id DESC', 'id, sortorder');
+        $sortorderlimit = $catsortorder + $sortorderstep;
 
-    if ($fixcategories = $DB->get_records_sql($sql)) {
-        //fix the course sortorder ranges
-        foreach ($fixcategories as $cat) {
-            $sql = "UPDATE {course}
-                       SET sortorder = ".$DB->sql_modulo('sortorder', get_max_courses_in_category())." + ?
-                     WHERE category = ?";
-            $DB->execute($sql, array($cat->sortorder, $cat->id));
+        // The sortorders already taken in the category range, and the courses that need a new one.
+        $occupied = [];
+        $fixcourses = [];
+        $minsortorder = $catsortorder;
+        $lowestgood = $sortorderlimit;
+        foreach ($courses as $course) {
+            $coursesortorder = (int) $course->sortorder;
+            if ($coursesortorder > $minsortorder && $coursesortorder <= $sortorderlimit) {
+                // Gaps between the courses of a category are allowed.
+                $occupied[$coursesortorder] = true;
+                $minsortorder = $coursesortorder;
+                $lowestgood = min($lowestgood, $coursesortorder);
+            } else {
+                $fixcourses[] = $course;
+            }
         }
-        $cacheevents['changesincoursecat'] = true;
+        unset($courses);
+
+        // Where to start looking, the courses keep the order they came back in.
+        $fixcount = count($fixcourses);
+        if (!$occupied) {
+            // None are in the range any more, the category was moved. Stack them against its top.
+            $minsortorder = $sortorderlimit - 1 - $fixcount;
+        } else if ($lowestgood - $fixcount > $catsortorder) {
+            // There is room in front of the courses, where the next new course goes as well.
+            $minsortorder = $lowestgood - $fixcount - 1;
+        }
+        // Otherwise there is no free space in front, so they go behind the last course.
+
+        foreach ($fixcourses as $course) {
+            // Give it the next sortorder that is still free.
+            $freesortorder = $minsortorder + 1;
+            while ($freesortorder <= $sortorderlimit && isset($occupied[$freesortorder])) {
+                $freesortorder++;
+            }
+            if ($freesortorder > $sortorderlimit) {
+                // More courses than get_max_courses_in_category().
+                break;
+            }
+            $occupied[$freesortorder] = true;
+            $DB->set_field('course', 'sortorder', $freesortorder, ['id' => $course->id]);
+            $cacheevents['changesincourse'] = true;
+        }
+        unset($fixcourses);
     }
     unset($fixcategories);
 
-    // categories having courses with sortorder duplicates or having gaps in sortorder
-    $sql = "SELECT DISTINCT c1.category AS id , cc.sortorder
-              FROM {course} c1
-              JOIN {course} c2 ON c1.sortorder = c2.sortorder
-              JOIN {course_categories} cc ON (c1.category = cc.id)
-             WHERE c1.id <> c2.id";
-    $fixcategories = $DB->get_records_sql($sql);
-
-    $sql = "SELECT cc.id, cc.sortorder, cc.coursecount, MAX(c.sortorder) AS maxsort, MIN(c.sortorder) AS minsort
-              FROM {course_categories} cc
-              JOIN {course} c ON c.category = cc.id
-          GROUP BY cc.id, cc.sortorder, cc.coursecount
-            HAVING (MAX(c.sortorder) <>  cc.sortorder + cc.coursecount) OR (MIN(c.sortorder) <>  cc.sortorder + 1)";
-    $gapcategories = $DB->get_records_sql($sql);
-
-    foreach ($gapcategories as $cat) {
-        if (isset($fixcategories[$cat->id])) {
-            // duplicates detected already
-
-        } else if ($cat->minsort == $cat->sortorder and $cat->maxsort == $cat->sortorder + $cat->coursecount - 1) {
-            // easy - new course inserted with sortorder 0, the rest is ok
-            $sql = "UPDATE {course}
-                       SET sortorder = sortorder + 1
-                     WHERE category = ?";
-            $DB->execute($sql, array($cat->id));
-
-        } else {
-            // it needs full resorting
-            $fixcategories[$cat->id] = $cat;
-        }
-        $cacheevents['changesincourse'] = true;
-    }
-    unset($gapcategories);
-
-    // fix course sortorders in problematic categories only
-    foreach ($fixcategories as $cat) {
-        $i = 1;
-        $courses = $DB->get_records('course', array('category'=>$cat->id), 'sortorder ASC, id DESC', 'id, sortorder');
-        foreach ($courses as $course) {
-            if ($course->sortorder != $cat->sortorder + $i) {
-                $course->sortorder = $cat->sortorder + $i;
-                $DB->update_record_raw('course', $course, true);
-                $cacheevents['changesincourse'] = true;
-            }
-            $i++;
-        }
-    }
-
-    // advise all caches that need to be rebuilt
+    // Advise all caches that need to be rebuilt.
     foreach (array_keys($cacheevents) as $event) {
         cache_helper::purge_by_event($event);
     }
 }
 
 /**
- * Internal recursive category verification function, do not use directly!
+ * Internal category verification function, do not use directly!
  *
- * @todo Document the arguments of this function better
+ * Walks the category tree and collects the categories whose sortorder has to change.
  *
- * @global object
- * @uses CONTEXT_COURSECAT
- * @param array $children
- * @param int $sortorder
- * @param string $parent
- * @param int $depth
- * @param string $path
- * @param array $fixcontexts
- * @return bool if changes were made
+ * A category keeps its sortorder unless it is too close to the previous one, so a change that
+ * only leaves a gap behind, such as deleting a category, rewrites nothing here.
+ *
+ * Nothing is written, the records are updated in place and returned so that the caller can read
+ * the resulting sortorder from them and write them.
+ *
+ * @param array $children the records to visit, their subcategories are in the children property, keyed by sortorder
+ * @param array $fixcontexts the contexts of the categories whose path changed are added to it
+ * @return array the categories to write, keyed by id, each the record and the delta for its courses, null if they stay
  */
-function _fix_course_cats($children, &$sortorder, $parent, $depth, $path, &$fixcontexts) {
-    global $DB;
+function _fix_course_cats($children, &$fixcontexts) {
+    $sortorderstep = get_max_courses_in_category();
 
-    $depth++;
-    $changesmade = false;
+    // Room for a few more categories at the same place.
+    $extraroom = $sortorderstep * 100;
+    $changes = [];
 
-    foreach ($children as $cat) {
-        $sortorder = $sortorder + get_max_courses_in_category();
+    // Where the walk stands. The values only move forward and are never restored, so a single set
+    // of them is enough and only the position in the tree is kept per level of the stack.
+    $sortorder = $sortorderstep;
+    $unplacedbefore = false;
+    $incascade = false;
+    $stack = [
+        [
+            'categories' => $children,
+            'parent' => 0,
+            'depth' => 1,
+            'path' => '',
+        ],
+    ];
+
+    while ($stack) {
+        $level = array_key_last($stack);
+
+        // Take the first category left on this level and drop it, so that the next round finds
+        // the one behind it.
+        $firstkey = array_key_first($stack[$level]['categories']);
+        if ($firstkey === null) {
+            array_pop($stack);
+            continue;
+        }
+        $cat = $stack[$level]['categories'][$firstkey];
+        unset($stack[$level]['categories'][$firstkey]);
+
+        ['parent' => $parent, 'depth' => $depth, 'path' => $path] = $stack[$level];
+
         $update = false;
-        if ($parent != $cat->parent or $depth != $cat->depth or $path.'/'.$cat->id != $cat->path) {
+        $delta = null;
+        if ($parent != $cat->parent || $depth != $cat->depth || $path . '/' . $cat->id != $cat->path) {
             $cat->parent = $parent;
             $cat->depth  = $depth;
-            $cat->path   = $path.'/'.$cat->id;
+            $cat->path   = $path . '/' . $cat->id;
             $update = true;
 
-            // make sure context caches are rebuild and dirty contexts marked
+            // Make sure context caches are rebuilt and dirty contexts marked.
             $context = context_coursecat::instance($cat->id);
             $fixcontexts[$context->id] = $context;
         }
-        if ($cat->sortorder != $sortorder) {
+        $catsortorder = (int) $cat->sortorder;
+        $unplaced = empty($catsortorder);
+        if ($incascade) {
+            if ($catsortorder < $sortorder) {
+                $sortorder += $extraroom;
+            } else {
+                // Far enough ahead, so the cascade stops here.
+                $incascade = false;
+            }
+        }
+        if ($catsortorder < $sortorder) {
+            // Too close to the previous category, or not placed in the tree yet (sortorder 0).
+            if ($unplacedbefore && !$unplaced) {
+                // A category was just added here, so renumber the categories behind it only once.
+                $sortorder += $extraroom;
+                $incascade = true;
+            }
+            if (!$unplaced) {
+                // The courses follow their category, the unplaced ones stay where they are.
+                $delta = $sortorder - $catsortorder;
+            }
             $cat->sortorder = $sortorder;
             $update = true;
         }
         if ($update) {
-            $DB->update_record('course_categories', $cat, true);
-            $changesmade = true;
+            $changes[$cat->id] = ['category' => $cat, 'delta' => $delta];
         }
+        $sortorder = $cat->sortorder + $sortorderstep;
+        $unplacedbefore = $unplaced;
+
         if (isset($cat->children)) {
-            if (_fix_course_cats($cat->children, $sortorder, $cat->id, $cat->depth, $cat->path, $fixcontexts)) {
-                $changesmade = true;
-            }
+            $stack[] = [
+                'categories' => $cat->children,
+                'parent' => $cat->id,
+                'depth' => $depth + 1,
+                'path' => $cat->path,
+            ];
         }
     }
-    return $changesmade;
+    return $changes;
 }
 
 /**
@@ -2160,17 +2321,15 @@ function decompose_update_into_safe_changes(array $newvalues, $unusedvalue) {
 /**
  * Return maximum number of courses in a category
  *
- * @uses MAX_COURSES_IN_CATEGORY
  * @return int number of courses
  */
 function get_max_courses_in_category() {
     global $CFG;
-    // Use default MAX_COURSES_IN_CATEGORY if $CFG->maxcoursesincategory is not set or invalid.
-    if (!isset($CFG->maxcoursesincategory) || clean_param($CFG->maxcoursesincategory, PARAM_INT) == 0) {
-        return MAX_COURSES_IN_CATEGORY;
-    } else {
-        return $CFG->maxcoursesincategory;
+    // The default when $CFG->maxcoursesincategory is not set or invalid.
+    if (empty($CFG->maxcoursesincategory) || (int) $CFG->maxcoursesincategory <= 0) {
+        $CFG->maxcoursesincategory = 10000;
     }
+    return $CFG->maxcoursesincategory;
 }
 
 /**

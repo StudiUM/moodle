@@ -710,20 +710,21 @@ final class datalib_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
 
-        // Default settings.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY, get_max_courses_in_category());
+        // Default settings, the fallback of get_max_courses_in_category().
+        $this->assertEquals(10000, get_max_courses_in_category());
 
         // Misc category.
         $misc = \core_course_category::get_default();
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY, $misc->sortorder);
 
         $category1 = $this->getDataGenerator()->create_category();
         $category2 = $this->getDataGenerator()->create_category();
 
         // Check category sort orders.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY, \core_course_category::get($misc->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2, \core_course_category::get($category1->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3, \core_course_category::get($category2->id)->sortorder);
+        $this->assert_categories_are_listed_in_order([$misc->id, $category1->id, $category2->id]);
+        $before = [];
+        foreach ([$misc, $category1, $category2] as $category) {
+            $before[$category->id] = (int) \core_course_category::get($category->id)->sortorder;
+        }
 
         // Create courses.
         $course1 = $this->getDataGenerator()->create_course(['category' => $category1->id]);
@@ -731,41 +732,86 @@ final class datalib_test extends \advanced_testcase {
         $course3 = $this->getDataGenerator()->create_course(['category' => $category1->id]);
         $course4 = $this->getDataGenerator()->create_course(['category' => $category2->id]);
 
-        // Check course sort orders.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2 + 2, get_course($course1->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3 + 2, get_course($course2->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2 + 1, get_course($course3->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3 + 1, get_course($course4->id)->sortorder);
+        // Check course sort orders: in range, newest first.
+        $this->assert_courses_are_listed_in_order($category1->id, [$course3->id, $course1->id]);
+        $this->assert_courses_are_listed_in_order($category2->id, [$course4->id, $course2->id]);
 
         // Increase max course in category.
         $CFG->maxcoursesincategory = 20000;
         $this->assertEquals(20000, get_max_courses_in_category());
 
-        // The sort order has not yet fixed, these sort orders should be the same as before.
-        // Categories.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY, \core_course_category::get($misc->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2, \core_course_category::get($category1->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3, \core_course_category::get($category2->id)->sortorder);
+        // The sort order has not yet fixed, nothing may have moved.
+        foreach ($before as $categoryid => $sortorder) {
+            $this->assertSame(
+                $sortorder,
+                (int) \core_course_category::get($categoryid)->sortorder,
+                "Category {$categoryid} moved although no sortorder had to be fixed."
+            );
+        }
         // Courses in category 1.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2 + 2, get_course($course1->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 2 + 1, get_course($course3->id)->sortorder);
+        $this->assert_courses_are_listed_in_order($category1->id, [$course3->id, $course1->id]);
         // Courses in category 2.
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3 + 2, get_course($course2->id)->sortorder);
-        $this->assertEquals(MAX_COURSES_IN_CATEGORY * 3 + 1, get_course($course4->id)->sortorder);
+        $this->assert_courses_are_listed_in_order($category2->id, [$course4->id, $course2->id]);
 
         // Create new category so that the sort orders are applied.
         $category3 = $this->getDataGenerator()->create_category();
-        // Categories.
-        $this->assertEquals(20000, \core_course_category::get($misc->id)->sortorder);
-        $this->assertEquals(20000 * 2, \core_course_category::get($category1->id)->sortorder);
-        $this->assertEquals(20000 * 3, \core_course_category::get($category2->id)->sortorder);
-        $this->assertEquals(20000 * 4, \core_course_category::get($category3->id)->sortorder);
-        // Courses in category 1.
-        $this->assertEquals(20000 * 2 + 2, get_course($course1->id)->sortorder);
-        $this->assertEquals(20000 * 2 + 1, get_course($course3->id)->sortorder);
+        // Categories, they are spaced by the new maximum.
+        $this->assert_categories_are_listed_in_order(
+            [$misc->id, $category1->id, $category2->id, $category3->id]
+        );
+        // Courses in category 1, they follow their category when its sortorder changes.
+        $this->assert_courses_are_listed_in_order($category1->id, [$course3->id, $course1->id]);
         // Courses in category 2.
-        $this->assertEquals(20000 * 3 + 2, get_course($course2->id)->sortorder);
-        $this->assertEquals(20000 * 3 + 1, get_course($course4->id)->sortorder);
+        $this->assert_courses_are_listed_in_order($category2->id, [$course4->id, $course2->id]);
+    }
+
+    /**
+     * Assert that the categories are listed in the given order and that each one leaves room for
+     * get_max_courses_in_category() courses between it and the category before it.
+     *
+     * @param array $categories the ids of the categories, in the order they should be listed in
+     */
+    private function assert_categories_are_listed_in_order(array $categories): void {
+        $previous = null;
+        foreach ($categories as $categoryid) {
+            $sortorder = (int) \core_course_category::get($categoryid)->sortorder;
+            if ($previous !== null) {
+                $this->assertGreaterThanOrEqual(
+                    $previous + get_max_courses_in_category(),
+                    $sortorder,
+                    "Category {$categoryid} leaves no room for the courses of the one before it."
+                );
+            }
+            $previous = $sortorder;
+        }
+    }
+
+    /**
+     * Assert that the courses are inside the range of their category and listed in the given order,
+     * wherever in that range their sortorder values ended up.
+     *
+     * @param int $categoryid
+     * @param array $courses the ids of the courses, in the order they should be listed in
+     */
+    private function assert_courses_are_listed_in_order(int $categoryid, array $courses): void {
+        $catsortorder = (int) \core_course_category::get($categoryid)->sortorder;
+        $sortorderlimit = $catsortorder + get_max_courses_in_category();
+
+        $previous = $catsortorder;
+        foreach ($courses as $courseid) {
+            $sortorder = (int) get_course($courseid)->sortorder;
+            $this->assertLessThanOrEqual(
+                $sortorderlimit,
+                $sortorder,
+                "Course {$courseid} is outside of the sortorder range of its category."
+            );
+            $this->assertGreaterThan(
+                $previous,
+                $sortorder,
+                "Course {$courseid} is not listed in the expected order."
+            );
+            $previous = $sortorder;
+        }
     }
 
     /**
@@ -792,7 +838,6 @@ final class datalib_test extends \advanced_testcase {
         $this->assertDebuggingCalled("The number of courses (category id: $category1->id) has reached max number of courses " .
             "in a category (" . get_max_courses_in_category() . "). It will cause a sorting performance issue. " .
             "Please set higher value for \$CFG->maxcoursesincategory in config.php. " .
-            "Please also make sure \$CFG->maxcoursesincategory * MAX_COURSE_CATEGORIES less than max integer. " .
             "See tracker issues: MDL-25669 and MDL-69573");
     }
 
