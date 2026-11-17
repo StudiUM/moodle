@@ -28,8 +28,8 @@ namespace core;
  * @category   test
  * @copyright  2026 Jonathan Champ
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     ::fix_course_sortorder
  */
+#[\PHPUnit\Framework\Attributes\CoversFunction('fix_course_sortorder')]
 final class fix_course_sortorder_test extends \advanced_testcase {
     /**
      * Create a tree of course categories with a couple of courses in each of the leaf categories.
@@ -741,6 +741,28 @@ final class fix_course_sortorder_test extends \advanced_testcase {
                 $this->assertLessThanOrEqual($sortorderlimit, $sortorder);
             }
         }
+    }
+
+    /**
+     * Courses outside the category range do not affect the allocation of free sortorders.
+     */
+    public function test_free_course_sortorders_ignore_courses_above_the_category_range(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $tree = $this->create_category_tree(1, 1, 1);
+        $categoryid = reset($tree)[0];
+        $catsortorder = (int) $DB->get_field('course_categories', 'sortorder', ['id' => $categoryid]);
+        $sortorderlimit = $catsortorder + get_max_courses_in_category();
+        $courseid = array_key_first($this->get_courses_of($categoryid));
+
+        $DB->set_field('course', 'sortorder', $sortorderlimit + 1, ['id' => $courseid]);
+
+        $sortorders = get_free_course_sortorders($categoryid);
+
+        $this->assertGreaterThan($catsortorder, $sortorders[0]);
+        $this->assertLessThanOrEqual($sortorderlimit, $sortorders[0]);
     }
 
     /**

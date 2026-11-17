@@ -843,12 +843,14 @@ function get_free_course_sortorders($categoryid, $count = 1) {
 
     $sql = 'SELECT MIN(sortorder) AS minsortorder, MAX(sortorder) AS maxsortorder
               FROM {course}
-             WHERE category = ?';
-    $bounds = $DB->get_record_sql($sql, [$categoryid]);
+             WHERE category = ?
+               AND sortorder > ?
+               AND sortorder <= ?';
+    $bounds = $DB->get_record_sql($sql, [$categoryid, $catsortorder, $sortorderlimit]);
     $minsortorder = (int) $bounds->minsortorder;
 
-    // Courses with a broken sortorder do not eat up the free space.
-    $maxsortorder = min((int) $bounds->maxsortorder, $sortorderlimit);
+    // Courses with a sortorder outside the category range do not eat up the free space.
+    $maxsortorder = (int) $bounds->maxsortorder;
 
     if ($minsortorder <= $catsortorder) {
         // No courses yet, or all of them are broken, so start at the top of the range.
