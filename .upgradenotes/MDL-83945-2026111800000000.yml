@@ -1,0 +1,9 @@
+issueNumber: MDL-83945
+notes:
+  core_question:
+    - message: >-
+        Added `question_engine_data_mapper::iterate_attempts_at_question()`, a
+        memory friendly alternative to `load_attempts_at_question()`. It loads
+        the question attempts in batches and yields them one at a time. The
+        quiz statistics response analysis now uses it.
+      type: improved

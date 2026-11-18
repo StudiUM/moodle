@@ -349,4 +349,80 @@ final class datalib_test extends \qbehaviour_walkthrough_test_base {
     public function test_clean_file_area_name(string $uncleanedfilearea, string $expectedfilearea): void {
         $this->assertEquals($expectedfilearea, \question_file_saver::clean_file_area_name($uncleanedfilearea));
     }
+
+    /**
+     * iterate_attempts_at_question() must return the same complete attempts as
+     * load_attempts_at_question(), even when batches do not align with attempts.
+     */
+    public function test_iterate_attempts_at_question(): void {
+        $this->resetAfterTest();
+        $dm = new question_engine_data_mapper();
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $generator->create_question_category();
+        $sa = $generator->create_question('shortanswer', null, ['category' => $cat->id]);
+
+        $usageids = [];
+        for ($i = 0; $i < 7; $i++) {
+            $this->start_attempt_at_question(question_bank::load_question($sa->id), 'interactive', 1);
+            // Several steps per attempt.
+            $this->process_submission(['-submit' => 1, 'answer' => 'wrong' . $i]);
+            $this->process_submission(['-submit' => 1, 'answer' => 'frog']);
+            $this->finish();
+            $this->save_quba();
+            $usageids[] = $this->quba->get_id();
+        }
+        $qubaids = new qubaid_list($usageids);
+
+        $expected = $dm->load_attempts_at_question($sa->id, $qubaids);
+        $this->assertCount(7, $expected);
+
+        // Batch size 3 does not divide 7 and is not aligned with the number of steps.
+        $actual = [];
+        foreach ($dm->iterate_attempts_at_question($sa->id, $qubaids, 3) as $id => $qa) {
+            $actual[$id] = $qa;
+        }
+        $this->assertEquals(array_keys($expected), array_keys($actual));
+        foreach ($expected as $id => $qa) {
+            $this->assertEquals($qa->get_num_steps(), $actual[$id]->get_num_steps());
+            $this->assertEquals(
+                $qa->classify_response(\question_attempt::LAST_TRY),
+                $actual[$id]->classify_response(\question_attempt::LAST_TRY)
+            );
+        }
+    }
+
+    /**
+     * Regression test: attempts must never be split between two batches. A question with many
+     * step data rows (drag and drop onto image) loses its "_choiceorder" data when split, which made
+     * the quiz statistics response analysis fail with "Call to a member function summarise() on null".
+     */
+    public function test_iterate_attempts_at_question_keeps_attempts_complete(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $dm = new question_engine_data_mapper();
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $generator->create_question_category();
+        $dd = $generator->create_question('ddimageortext', 'xsection', ['category' => $cat->id]);
+
+        $usageids = [];
+        for ($i = 0; $i < 5; $i++) {
+            $this->quba = question_engine::make_questions_usage_by_activity('unit_test', \context_system::instance());
+            $this->start_attempt_at_question(question_bank::load_question($dd->id), 'interactive', 1);
+            $this->process_submission(['-submit' => 1, 'p1' => '1', 'p2' => '2', 'p3' => '3', 'p4' => '4',
+                    'p5' => '5', 'p6' => '6', 'p7' => '7', 'p8' => '8']);
+            $this->finish();
+            $this->save_quba();
+            $usageids[] = $this->quba->get_id();
+        }
+
+        // Batch size 2 does not divide 5, and every attempt spans many rows.
+        $count = 0;
+        foreach ($dm->iterate_attempts_at_question($dd->id, new qubaid_list($usageids), 2) as $qa) {
+            $count++;
+            $this->assertNotNull($qa->get_step(0)->get_qt_var('_choiceorder1'));
+            // This used to throw an error when the attempt had been cut in two.
+            $this->assertNotEmpty($qa->classify_response(\question_attempt::LAST_TRY));
+        }
+        $this->assertEquals(5, $count);
+    }
 }

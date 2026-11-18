@@ -910,6 +910,77 @@ ORDER BY
     }
 
     /**
+     * Same as {@see load_attempts_at_question()}, but memory friendly.
+     *
+     * Attempts are loaded in batches of whole question attempts and yielded one at a time,
+     * so the caller never needs to hold all of them in memory. Batches are made of complete
+     * question attempts (never splitting the steps of one attempt across two queries).
+     *
+     * @param int $questionid the question to load attempts at.
+     * @param qubaid_condition $qubaids which question usages to consider.
+     * @param int $batchsize number of question attempts loaded per query.
+     * @return \Generator yields question_attempt objects indexed by question attempt id.
+     */
+    public function iterate_attempts_at_question($questionid, qubaid_condition $qubaids, $batchsize = 200) {
+        // Only fetch the (small) list of ids up front.
+        $idsql = "
+        SELECT qa.id
+        FROM {$qubaids->from_question_attempts('qa')}
+        WHERE {$qubaids->where()} AND qa.questionid = :questionid
+        ORDER BY qa.id";
+        $idparams = $qubaids->from_where_params();
+        $idparams['questionid'] = $questionid;
+        $ids = $this->db->get_fieldset_sql($idsql, $idparams);
+
+        foreach (array_chunk($ids, max(1, (int) $batchsize)) as $chunk) {
+            [$insql, $inparams] = $this->db->get_in_or_equal($chunk, SQL_PARAMS_NAMED, 'qaid');
+            $sql = "
+            SELECT
+                quba.contextid,
+                quba.preferredbehaviour,
+                qa.id AS questionattemptid,
+                qa.questionusageid,
+                qa.slot,
+                qa.behaviour,
+                qa.questionid,
+                qa.variant,
+                qa.maxmark,
+                qa.minfraction,
+                qa.maxfraction,
+                qa.flagged,
+                qa.questionsummary,
+                qa.rightanswer,
+                qa.responsesummary,
+                qa.timemodified,
+                qas.id AS attemptstepid,
+                qas.sequencenumber,
+                qas.state,
+                qas.fraction,
+                qas.timecreated,
+                qas.userid,
+                qasd.name,
+                qasd.value
+            FROM {question_attempts} qa
+            JOIN {question_usages} quba ON quba.id = qa.questionusageid
+            LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+            LEFT JOIN {question_attempt_step_data} qasd ON qasd.attemptstepid = qas.id
+            WHERE qa.id $insql
+            ORDER BY qa.id, qas.sequencenumber";
+            $records = $this->db->get_recordset_sql($sql, $inparams);
+            while ($records->valid()) {
+                $record = $records->current();
+                yield $record->questionattemptid => question_attempt::load_from_records(
+                    $records,
+                    $record->questionattemptid,
+                    new question_usage_null_observer(),
+                    $record->preferredbehaviour
+                );
+            }
+            $records->close();
+        }
+    }
+
+    /**
      * Update a question_usages row to refect any changes in a usage (but not
      * any of its question_attempts.
      *
