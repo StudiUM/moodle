@@ -122,7 +122,8 @@ class analyser {
         $this->calculationtime = time();
         // Load data.
         $dm = new \question_engine_data_mapper();
-        $questionattempts = $dm->load_attempts_at_question($this->questiondata->id, $qubaids);
+        // Iterate over the attempts in batches, so they are never all held in memory at the same time.
+        $questionattempts = $dm->iterate_attempts_at_question($this->questiondata->id, $qubaids);
 
         // Analyse it.
         foreach ($questionattempts as $qa) {
